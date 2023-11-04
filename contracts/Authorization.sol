@@ -13,10 +13,7 @@ contract Authorization is ERC721, ERC721URIStorage, Ownable {
     constructor() ERC721("Authorization", "SMAT") Ownable(msg.sender) {}
 
     function mint(address to, string memory uri) public returns (uint256) {
-        require(
-            to != address(0),
-            "Mint error: Destination address can't be zero."
-        );
+        require(to != address(0), "Destination address can't be zero.");
 
         _tokenIdCounter.increment();
         uint256 tokenId = _tokenIdCounter.current();
