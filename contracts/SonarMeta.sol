@@ -25,10 +25,12 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
     address private tbaImpAddr; // TBA implementation address
     address private marketplaceImpAddr; // Marketplace implementation address
 
-    // Track TBAs created by SonarMeta, TBA address => TBA info
-    mapping(address => TBA) public TBAs;
+    // Track TBA infos, TBA address => TBA info
+    mapping(address => TBA) private TBAs;
+    // Track submitters of creation/component tokens, tokenID => address
+    mapping(uint256 => address) private creationSubmitters;
     // Track minters of authorization tokens, tokenID => TBA address
-    mapping(uint256 => address) public authorizationMinters;
+    mapping(uint256 => address) private authorizationMinters;
 
     //////////////////////////////////////////////////////////
     ///////////////////////   Events   ///////////////////////
@@ -119,17 +121,19 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
         return tbaAddr;
     }
 
-    /// @notice Create a new creation token with TBA
-    /// @param _to The account the owner of the new creation token
-    /// @param _uri The tokenURI the metadata of the token needs
+    /// @notice Create a new creation/component token with TBA
+    /// It is important to know every component of a co-creation MUST be a SonarMeta creation
+    /// because we only use these components to calculate the proceeds of every co-creation member
+    /// @param _to The account the owner of the new creation/component token
+    /// @param _uri The tokenURI the metadata of the new creation/component token needs
     /// @param _chainId The ID of the chain provided to ERC6551 Registry
-    /// @return The TBA address created for the new creation token
-    /// @return The tokenID of the new creation token
+    /// @return The tokenID of the new creation/component token
+    /// @return The TBA address created for the new creation/component token
     function mintCreationWithTBA(
         address _to,
         string memory _uri,
         uint256 _chainId
-    ) external nonReentrant returns (address, uint256) {
+    ) external nonReentrant returns (uint256, address) {
         uint256 tokenId = creation.mint(_to, _uri);
 
         address tbaAddr = mintTBAForCreation(
@@ -138,12 +142,28 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
             _chainId
         );
 
-        return (tbaAddr, tokenId);
+        return (tokenId, tbaAddr);
+    }
+
+    /// @notice Submit creation/component token by its member
+    /// The destination is a TBA, and will become a co-creation/co-component
+    /// @param _to The TBA address of submission
+    /// @param _tokenId The tokenID of the creation/component token
+    function submitComponent(address _to, uint256 _tokenId)
+        external
+        onlySonarMetaTBA(_to)
+        nonReentrant
+        returns ()
+    {
+        creation.approve(_to, _tokenId);
+        creation.safeTransferFrom(msg.sender, _to, _tokenId);
+
+        creationSubmitters[tokenId] = msg.sender;
     }
 
     /// @notice Mint a new authorization token for a TBA
     /// @param _to The TBA the minter of the new authorization token
-    /// @param _uri The tokenURI the metadata of the token needs
+    /// @param _uri The tokenURI the metadata of the new authorization token needs
     /// @return The tokenID of the new authorization token
     function mintAuthorization(address _to, string memory _uri)
         external

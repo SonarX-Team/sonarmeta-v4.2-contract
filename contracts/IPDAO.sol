@@ -2,12 +2,13 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./utils/ReentrancyGuard.sol";
 
-/// @title SonarMeta IPDAO contract
+/// @title SonarMeta IP DAO contract
 /// @author SonarX (Hangzhou) Technology Co., Ltd.
-contract IPDAO is Ownable {
-    uint256 public memberCount;
-    mapping(address => bool) public members;
+contract IPDAO is Ownable, ReentrancyGuard {
+    mapping(address => bool) private members;
+    uint256 private memberCount;
 
     //////////////////////////////////////////////////////////
     ///////////////////////   Events   ///////////////////////
@@ -25,9 +26,9 @@ contract IPDAO is Ownable {
 
     constructor() Ownable(msg.sender) {}
 
-    /// @notice Add a member to this IPDAO
+    /// @notice Add a member to this IP DAO by its owner
     /// @param _memberAddr The member address to be added
-    function addMember(address _memberAddr) external {
+    function addMember(address _memberAddr) external onlyOwner nonReentrant {
         require(
             members[_memberAddr],
             "Add error: This address has been already a member."
@@ -39,9 +40,9 @@ contract IPDAO is Ownable {
         emit MemberAdded(_memberAddr);
     }
 
-    /// @notice Remove a member from this IPDAO
+    /// @notice Remove a member from this IP DAO by its owner
     /// @param _memberAddr The member address to be removed
-    function removeMember(address _memberAddr) external {
+    function removeMember(address _memberAddr) external onlyOwner nonReentrant {
         require(
             members[_memberAddr],
             "Remove error: This address is not a member."
@@ -57,12 +58,12 @@ contract IPDAO is Ownable {
     //////////////////   Getter Functions   //////////////////
     //////////////////////////////////////////////////////////
 
-    /// @notice Check if the given address is a member of this IPDAO
+    /// @notice Check if the given address is a member of this IP DAO
     function isMember(address _memberAddr) external view returns (bool) {
         return members[_memberAddr];
     }
 
-    /// @notice Get the total account of members of this IPDAO
+    /// @notice Get the total account of members of this IP DAO
     function getMemberCount() external view returns (uint256) {
         return memberCount;
     }
