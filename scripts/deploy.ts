@@ -1,19 +1,70 @@
-import { formatEther, parseEther } from "viem";
 import hre from "hardhat";
+import fs from "fs";
+import path from "path";
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const unlockTime = BigInt(currentTimestampInSeconds + 60);
+  const NETWORK = "lineaGoerli"; // Set before deployment
 
-  const lockedAmount = parseEther("0.001");
+  console.log("Deploying...");
 
-  const lock = await hre.viem.deployContract("Lock", [unlockTime], {
-    value: lockedAmount,
+  console.log("Deploying Creation contract...");
+  const creation = await hre.viem.deployContract("Creation");
+
+  console.log("Deploying Authorization contract...");
+  const authorization = await hre.viem.deployContract("Authorization");
+
+  console.log("Deploying Registry contract...");
+  const registry = await hre.viem.deployContract("ERC6551Registry");
+
+  console.log("Deploying TBA contract...");
+  const tba = await hre.viem.deployContract("ERC6551Account");
+
+  console.log("Deploying Marketplace contract...");
+  const marketplace = await hre.viem.deployContract("Marketplace", [authorization.address]);
+
+  console.log("Deploying ChainlinkVRF contract...");
+  const chainlinkVrf = await hre.viem.deployContract("ChainlinkVRF");
+
+  console.log("Deploying Governance contract...");
+  const governance = await hre.viem.deployContract("Governance");
+
+  console.log("Deploying SonarMeta main contract...");
+  const main = await hre.viem.deployContract("SonarMeta", [
+    creation.address,
+    authorization.address,
+    registry.address,
+    tba.address,
+    marketplace.address,
+    chainlinkVrf.address,
+  ]);
+
+  console.log("Deployed!");
+
+  // Save the addresses
+  const addresses = {
+    main: main.address,
+    governance: governance.address,
+    creation: creation.address,
+    authorization: authorization.address,
+    marketplace: marketplace.address,
+    registry: registry.address,
+    tba: tba.address,
+    chainlinkVrf: chainlinkVrf.address,
+  };
+
+  console.log(addresses);
+
+  // Save the addresses to a file
+  const folderPath = "address";
+
+  if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath);
+
+  const filePath = path.join(folderPath, `address-${NETWORK}.json`);
+
+  fs.writeFile(filePath, JSON.stringify(addresses, undefined, 4), (err) => {
+    if (err) console.log("Write file error: " + err.message);
+    else console.log(`Addresses are saved into ${filePath}...`);
   });
-
-  console.log(
-    `Lock with ${formatEther(lockedAmount)}ETH and unlock timestamp ${unlockTime} deployed to ${lock.address}`
-  );
 }
 
 // We recommend this pattern to be able to use async/await everywhere

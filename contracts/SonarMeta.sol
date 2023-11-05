@@ -76,8 +76,8 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
     constructor(
         address _creationImpAddr,
         address _authorizationImpAddr,
-        address _tbaImpAddr,
         address _registryAddr,
+        address _tbaImpAddr,
         address _marketplaceImpAddr,
         address _chainlinkVRFImpAddr
     ) Ownable(msg.sender) {
@@ -153,12 +153,11 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
         external
         onlySonarMetaTBA(_to)
         nonReentrant
-        returns ()
     {
         creation.approve(_to, _tokenId);
         creation.safeTransferFrom(msg.sender, _to, _tokenId);
 
-        creationSubmitters[tokenId] = msg.sender;
+        creationSubmitters[_tokenId] = msg.sender;
     }
 
     /// @notice Mint a new authorization token for a TBA
