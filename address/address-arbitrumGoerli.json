@@ -1,0 +1,10 @@
+{
+    "main": "0x24098173412f0b24476894b12888df9b7917eb3f",
+    "governance": "0xdc4847df7a254cdd4e1a176e52f3396d4e9471a7",
+    "creation": "0x470d67f8de312a7674d9417aa18717cd114469b9",
+    "authorization": "0x50e160f7a2f54c74282c3022061b96273f9836ef",
+    "marketplace": "0x1f22bcca683845cf6f4ac9c6495f6d549349d5cb",
+    "registry": "0x9817a7faaeab2ff87d270a6f192cb49bb8d81e85",
+    "tba": "0xe6b922eafa9253f5057753bb3049a4f1a429f347",
+    "chainlinkVrf": "0x87268fe0a8dc90ec7a319800363deafc8a8ae02b"
+}

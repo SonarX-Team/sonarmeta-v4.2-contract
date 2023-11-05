@@ -19,6 +19,10 @@ const config: HardhatUserConfig = {
       url: "https://linea-goerli.infura.io/v3/2b7300b9852a435d86a5dc856e462c0e",
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
+    arbitrumGoerli: {
+      url: "https://arbitrum-goerli.infura.io/v3/2b7300b9852a435d86a5dc856e462c0e",
+      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    },
     scrollSepolia: {
       url: "https://sepolia-rpc.scroll.io/" || "",
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],

@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 
 async function main() {
-  const NETWORK = "lineaGoerli"; // Set before deployment
+  const NETWORK = "arbitrumGoerli"; // Set before deployment
 
   console.log("Deploying...");
 
