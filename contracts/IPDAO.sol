@@ -94,19 +94,31 @@ contract IPDAO is Ownable, ReentrancyGuard {
 
     /// @notice Submit creation/component token to a TBA
     /// Postcondition: Must call submitCreation in SonarMeta after
-    /// @param _tokenId The tokenID of the creation/component token
+    /// @param _to The destination TBA address (Must be a TBA)
+    /// @param _creationId The tokenID of the creation/component token
     /// @param _weight The weight that set to this submission
-    function submitCreation(uint256 _tokenId, uint256 _weight)
+    function submitCreation(address _to, uint256 _creationId, uint256 _weight)
         external
         onlyMember(msg.sender)
         nonReentrant
     {
-        Submission storage submission = submissions[_tokenId];
+        // TODO：需要一个tba实现检查给定TBA的owner是不是这个IP DAO
+        // address owner = tba.owner(_to);
+
+        // require(
+        //     owner == address(this),
+        //     "Submission can only be done with a TBA owned by this IP DAO."
+        // );
+
+        Submission storage submission = submissions[_creationId];
 
         submission.submitter = msg.sender;
         submission.weight = _weight;
 
-        emit CreationSubmitted(_tokenId, msg.sender, _weight);
+        creation.approve(_to, _creationId);
+        creation.safeTransferFrom(msg.sender, _to, _creationId);
+
+        emit CreationSubmitted(_creationId, msg.sender, _weight);
     }
 
     /// @notice Method for withdrawing proceeds to member

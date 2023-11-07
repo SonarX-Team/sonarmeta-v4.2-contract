@@ -20,7 +20,6 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
     }
 
     address private creationImpAddr; // Creation token implementation address
-    address private marketplaceImpAddr; // Marketplace implementation address
 
     // Track TBA infos, TBA address => TBA info
     mapping(address => TBA) private TBAs;
@@ -63,11 +62,9 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
     ///////////////////   Main Functions   ///////////////////
     //////////////////////////////////////////////////////////
 
-    constructor(
-        address _creationImpAddr,
-        address _authorizationImpAddr,
-        address _marketplaceImpAddr
-    ) Ownable(msg.sender) {
+    constructor(address _creationImpAddr, address _authorizationImpAddr)
+        Ownable(msg.sender)
+    {
         initializeReentrancyGuard();
 
         governance = Governance(owner());
@@ -75,7 +72,6 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
         authorization = Authorization(_authorizationImpAddr);
 
         creationImpAddr = _creationImpAddr;
-        marketplaceImpAddr = _marketplaceImpAddr;
     }
 
     /// @notice A TBA sign to use SonarMeta
@@ -101,19 +97,6 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
         uint256 tokenId = creation.mint(_to, _uri);
 
         return tokenId;
-    }
-
-    /// @notice Submit creation/component token to a TBA
-    /// Prerequisites: Must call submitCreation in IP DAO before
-    /// @param _to The destination TBA address (Must be a TBA)
-    /// @param _tokenId The tokenID of the creation/component token
-    function submitCreation(address _to, uint256 _tokenId)
-        external
-        onlySignedTBA(_to)
-        nonReentrant
-    {
-        creation.approve(_to, _tokenId);
-        creation.safeTransferFrom(msg.sender, _to, _tokenId);
     }
 
     /// @notice Mint a new authorization token for a TBA
@@ -162,7 +145,6 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
             "This TBA has been already authorized."
         );
 
-        authorization.approve(marketplaceImpAddr, _authorizationId);
         authorization.safeTransferFrom(_from, _to, _authorizationId);
 
         tba.stakeholders[_to] = true;
