@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Storage.sol";
@@ -27,7 +27,7 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
 
     // Track all listings, tokenID => List info
     mapping(uint256 => Listing) private listings;
-    // Pull over push patter, account => proceeds
+    // Pull over push pattern, account => proceeds
     mapping(address => uint256) private proceeds;
 
     //////////////////////////////////////////////////////////
@@ -85,6 +85,7 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
 
     constructor(address _authorizationImpAddr) Ownable(msg.sender) {
         initializeReentrancyGuard();
+        
         authorization = Authorization(_authorizationImpAddr);
     }
 
@@ -102,6 +103,7 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
             revert NotApprovedForMarketplace();
 
         listings[tokenId] = Listing(price, msg.sender);
+
         emit ItemListed(msg.sender, tokenId, price);
     }
 
@@ -113,6 +115,7 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
         isListed(tokenId)
     {
         delete listings[tokenId];
+
         emit ItemCanceled(msg.sender, tokenId);
     }
 
@@ -161,13 +164,13 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
 
     /// @notice Method for withdrawing proceeds from sales
     function withdrawProceeds() external nonReentrant {
-        if (proceeds[msg.sender] <= 0) revert NoProceeds();
+        uint256 proceed = proceeds[msg.sender];
+
+        if (proceed <= 0) revert NoProceeds();
 
         proceeds[msg.sender] = 0;
 
-        (bool success, ) = payable(msg.sender).call{
-            value: proceeds[msg.sender]
-        }("");
+        (bool success, ) = payable(msg.sender).call{value: proceed}("");
 
         require(success, "Transfer failed");
     }

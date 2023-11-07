@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Storage.sol";
 import "./Creation.sol";
 import "./Authorization.sol";
-import "./tokenboundaccount/ERC6551Registry.sol";
 import "./utils/ReentrancyGuard.sol";
-import "./utils/ChainlinkVRF.sol";
 import "./utils/Counters.sol";
 
 /// @title SonarMeta main contract
@@ -15,20 +13,17 @@ import "./utils/Counters.sol";
 contract SonarMeta is Ownable, Storage, ReentrancyGuard {
     /// @notice TBA information struct
     struct TBA {
-        bool existing; // If this TBA exists
+        bool isSigned; // If this TBA is signed to use SonarMeta
         mapping(address => bool) stakeholders; // All Stakeholder TBAs of this TBA
         uint stakeholderCount; // The amount of stakeholder TBAs of this TBA
         uint256 nodeValue; // The value of this TBA
     }
 
     address private creationImpAddr; // Creation token implementation address
-    address private tbaImpAddr; // TBA implementation address
     address private marketplaceImpAddr; // Marketplace implementation address
 
     // Track TBA infos, TBA address => TBA info
     mapping(address => TBA) private TBAs;
-    // Track submitters of creation/component tokens, tokenID => address
-    mapping(uint256 => address) private creationSubmitters;
     // Track minters of authorization tokens, tokenID => TBA address
     mapping(uint256 => address) private authorizationMinters;
 
@@ -36,15 +31,10 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
     ///////////////////////   Events   ///////////////////////
     //////////////////////////////////////////////////////////
 
-    /// @notice Emitted when a TBA is minted for a creation token
-    event TBAMinted(
-        address indexed tbaAddr,
-        address indexed creationImpAddr,
-        uint256 indexed creationId,
-        uint256 chainId
-    );
+    /// @notice Emitted when a TBA is signed to use SonarMeta
+    event TBASigned(address indexed tbaAddr);
 
-    /// @notice Emitted when authorization tokens are minted or increased
+    /// @notice Emitted when authorization tokens are minted
     event AuthorizationMinted(
         uint256 indexed authorizationId,
         address indexed tbaAddr
@@ -61,10 +51,10 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
     /////////////////////   Modifiers   //////////////////////
     //////////////////////////////////////////////////////////
 
-    modifier onlySonarMetaTBA(address _tbaAddr) {
+    modifier onlySignedTBA(address _tbaAddr) {
         require(
-            TBAs[_tbaAddr].existing,
-            "Address provided must be a TBA tracked by SonarMeta."
+            TBAs[_tbaAddr].isSigned,
+            "Address provided must be a signed TBA towards SonarMeta."
         );
         _;
     }
@@ -76,88 +66,54 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
     constructor(
         address _creationImpAddr,
         address _authorizationImpAddr,
-        address _registryAddr,
-        address _tbaImpAddr,
-        address _marketplaceImpAddr,
-        address _chainlinkVRFImpAddr
+        address _marketplaceImpAddr
     ) Ownable(msg.sender) {
         initializeReentrancyGuard();
 
         governance = Governance(owner());
         creation = Creation(_creationImpAddr);
         authorization = Authorization(_authorizationImpAddr);
-        registry = ERC6551Registry(_registryAddr);
-        randomGenerator = ChainlinkVRF(_chainlinkVRFImpAddr);
 
         creationImpAddr = _creationImpAddr;
-        tbaImpAddr = _tbaImpAddr;
         marketplaceImpAddr = _marketplaceImpAddr;
     }
 
-    /// @notice Create a new TBA for an existing creation token and track it
-    /// @param _creationImpAddr The implementation address of the given creation token
-    /// @param _creationId The tokenID of the given creation token
-    /// @param _chainId The ID of the chain provided to ERC6551 Registry
-    /// @return The TBA address created for the existing creation token
-    function mintTBAForCreation(
-        address _creationImpAddr,
-        uint256 _creationId,
-        uint256 _chainId
-    ) public nonReentrant returns (address) {
-        address tbaAddr = registry.createAccount(
-            tbaImpAddr,
-            _chainId,
-            _creationImpAddr,
-            _creationId,
-            generateRandom(10000),
-            ""
-        );
+    /// @notice A TBA sign to use SonarMeta
+    /// @param _tbaAddr The TBA address wants to sign
+    function signToUseSonarMeta(address _tbaAddr) external nonReentrant {
+        TBA storage tba = TBAs[_tbaAddr];
+        tba.isSigned = true;
 
-        TBA storage tba = TBAs[tbaAddr];
-        tba.existing = true;
-
-        emit TBAMinted(tbaAddr, _creationImpAddr, _creationId, _chainId);
-
-        return tbaAddr;
+        emit TBASigned(_tbaAddr);
     }
 
-    /// @notice Create a new creation/component token with TBA
-    /// It is important to know every component of a co-creation MUST be a SonarMeta creation
+    /// @notice Create a new creation/component token
+    /// Currently in the demo version, every component of a co-creation MUST be a SonarMeta creation
     /// because we only use these components to calculate the proceeds of every co-creation member
     /// @param _to The account the owner of the new creation/component token
     /// @param _uri The tokenURI the metadata of the new creation/component token needs
-    /// @param _chainId The ID of the chain provided to ERC6551 Registry
     /// @return The tokenID of the new creation/component token
-    /// @return The TBA address created for the new creation/component token
-    function mintCreationWithTBA(
-        address _to,
-        string memory _uri,
-        uint256 _chainId
-    ) external nonReentrant returns (uint256, address) {
+    function mintCreation(address _to, string memory _uri)
+        external
+        nonReentrant
+        returns (uint256)
+    {
         uint256 tokenId = creation.mint(_to, _uri);
 
-        address tbaAddr = mintTBAForCreation(
-            creationImpAddr,
-            tokenId,
-            _chainId
-        );
-
-        return (tokenId, tbaAddr);
+        return tokenId;
     }
 
-    /// @notice Submit creation/component token by its member
-    /// The destination is a TBA, and will become a co-creation/co-component
-    /// @param _to The TBA address of submission
+    /// @notice Submit creation/component token to a TBA
+    /// Prerequisites: Must call submitCreation in IP DAO before
+    /// @param _to The destination TBA address (Must be a TBA)
     /// @param _tokenId The tokenID of the creation/component token
-    function submitComponent(address _to, uint256 _tokenId)
+    function submitCreation(address _to, uint256 _tokenId)
         external
-        onlySonarMetaTBA(_to)
+        onlySignedTBA(_to)
         nonReentrant
     {
         creation.approve(_to, _tokenId);
         creation.safeTransferFrom(msg.sender, _to, _tokenId);
-
-        creationSubmitters[_tokenId] = msg.sender;
     }
 
     /// @notice Mint a new authorization token for a TBA
@@ -166,7 +122,7 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
     /// @return The tokenID of the new authorization token
     function mintAuthorization(address _to, string memory _uri)
         external
-        onlySonarMetaTBA(_to)
+        onlySignedTBA(_to)
         nonReentrant
         returns (uint256)
     {
@@ -188,7 +144,13 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
         address _from,
         address _to,
         uint256 _authorizationId
-    ) external nonReentrant returns (uint256) {
+    )
+        external
+        onlySignedTBA(_from)
+        onlySignedTBA(_to)
+        nonReentrant
+        returns (uint256)
+    {
         TBA storage tba = TBAs[_from];
 
         require(
@@ -219,7 +181,7 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
     function getStakeholderCount(address _tbaAddr)
         external
         view
-        onlySonarMetaTBA(_tbaAddr)
+        onlySignedTBA(_tbaAddr)
         returns (uint256)
     {
         return TBAs[_tbaAddr].stakeholderCount;
@@ -229,15 +191,9 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
     function getNodeValue(address _tbaAddr)
         external
         view
-        onlySonarMetaTBA(_tbaAddr)
+        onlySignedTBA(_tbaAddr)
         returns (uint256)
     {
         return TBAs[_tbaAddr].nodeValue;
-    }
-
-    /// @notice Generate random value by Chainlink VRF
-    function generateRandom(uint256 maxNum) internal returns (uint256) {
-        uint256 requestId = randomGenerator.requestRandomWords();
-        return (randomGenerator.getRandomNum(requestId) % maxNum);
     }
 }
