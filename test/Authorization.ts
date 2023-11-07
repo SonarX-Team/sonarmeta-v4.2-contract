@@ -12,7 +12,7 @@ describe("Authorization", function () {
     const [owner, account1, account2] = await hre.viem.getWalletClients();
 
     // Depolyment
-    const authorization = await hre.viem.deployContract("Authorization");
+    const authorization = await hre.viem.deployContract("Authorization", [owner.account.address]);
 
     const publicClient = await hre.viem.getPublicClient();
 

@@ -16,8 +16,9 @@ contract IPDAO is Ownable, ReentrancyGuard {
     Creation private creation;
 
     mapping(address => bool) private members;
-    mapping(uint256 => Submission) private submissions;
     uint256 private memberCount;
+
+    mapping(uint256 => Submission) private submissions;
 
     //////////////////////////////////////////////////////////
     ///////////////////////   Events   ///////////////////////
@@ -61,6 +62,8 @@ contract IPDAO is Ownable, ReentrancyGuard {
     //////////////////////////////////////////////////////////
 
     constructor(address _creationImpAddr) Ownable(msg.sender) {
+        initializeReentrancyGuard();
+
         creation = Creation(_creationImpAddr);
     }
 
@@ -97,11 +100,11 @@ contract IPDAO is Ownable, ReentrancyGuard {
     /// @param _to The destination TBA address (Must be a TBA)
     /// @param _creationId The tokenID of the creation/component token
     /// @param _weight The weight that set to this submission
-    function submitCreation(address _to, uint256 _creationId, uint256 _weight)
-        external
-        onlyMember(msg.sender)
-        nonReentrant
-    {
+    function submitCreation(
+        address _to,
+        uint256 _creationId,
+        uint256 _weight
+    ) external onlyMember(msg.sender) nonReentrant {
         // TODO：需要一个tba实现检查给定TBA的owner是不是这个IP DAO
         // address owner = tba.owner(_to);
 
@@ -115,7 +118,6 @@ contract IPDAO is Ownable, ReentrancyGuard {
         submission.submitter = msg.sender;
         submission.weight = _weight;
 
-        creation.approve(_to, _creationId);
         creation.safeTransferFrom(msg.sender, _to, _creationId);
 
         emit CreationSubmitted(_creationId, msg.sender, _weight);

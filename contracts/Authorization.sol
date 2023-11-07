@@ -11,9 +11,16 @@ contract Authorization is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIdCounter;
 
-    constructor() ERC721("Authorization", "SMAT") Ownable(msg.sender) {}
+    constructor(address initialOwner)
+        ERC721("Authorization", "SMAT")
+        Ownable(initialOwner)
+    {}
 
-    function mint(address to, string memory uri) public returns (uint256) {
+    function mint(address to, string memory uri)
+        public
+        onlyOwner
+        returns (uint256)
+    {
         require(to != address(0), "Destination address can't be zero.");
 
         _tokenIdCounter.increment();

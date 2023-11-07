@@ -11,9 +11,16 @@ contract Creation is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIdCounter;
 
-    constructor() ERC721("Creation", "SMCT") Ownable(msg.sender) {}
+    constructor(address initialOwner)
+        ERC721("Creation", "SMCT")
+        Ownable(initialOwner)
+    {}
 
-    function mint(address to, string memory uri) public returns (uint256) {
+    function mint(address to, string memory uri)
+        public
+        onlyOwner
+        returns (uint256)
+    {
         require(to != address(0), "Destination address can't be zero.");
 
         _tokenIdCounter.increment();

@@ -5,39 +5,30 @@ import path from "path";
 async function main() {
   const NETWORK = "arbitrumGoerli"; // Set before deployment
 
+  // Contracts are deployed using the first signer/account by default
+  const [owner] = await hre.viem.getWalletClients();
+
   console.log("Deploying...");
 
   console.log("Deploying Creation contract...");
-  const creation = await hre.viem.deployContract("Creation");
+  const creation = await hre.viem.deployContract("Creation", [owner.account.address]);
 
   console.log("Deploying Authorization contract...");
-  const authorization = await hre.viem.deployContract("Authorization");
-
-  console.log("Deploying Registry contract...");
-  const registry = await hre.viem.deployContract("ERC6551Registry");
-
-  console.log("Deploying TBA contract...");
-  const tba = await hre.viem.deployContract("ERC6551Account");
+  const authorization = await hre.viem.deployContract("Authorization", [owner.account.address]);
 
   console.log("Deploying Marketplace contract...");
   const marketplace = await hre.viem.deployContract("Marketplace", [authorization.address]);
-
-  console.log("Deploying ChainlinkVRF contract...");
-  const chainlinkVrf = await hre.viem.deployContract("ChainlinkVRF");
 
   console.log("Deploying Governance contract...");
   const governance = await hre.viem.deployContract("Governance");
 
   console.log("Deploying SonarMeta main contract...");
-  const main = await hre.viem.deployContract("SonarMeta", [
-    creation.address,
-    authorization.address,
-    registry.address,
-    tba.address,
-    marketplace.address,
-    chainlinkVrf.address,
-  ]);
+  const main = await hre.viem.deployContract("SonarMeta", [creation.address, authorization.address]);
 
+  // Transfer Ownership
+  await creation.write.transferOwnership([main.address]);
+  await authorization.write.transferOwnership([main.address]);
+  
   console.log("Deployed!");
 
   // Save the addresses
@@ -47,9 +38,6 @@ async function main() {
     creation: creation.address,
     authorization: authorization.address,
     marketplace: marketplace.address,
-    registry: registry.address,
-    tba: tba.address,
-    chainlinkVrf: chainlinkVrf.address,
   };
 
   console.log(addresses);

@@ -19,8 +19,6 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
         uint256 nodeValue; // The value of this TBA
     }
 
-    address private creationImpAddr; // Creation token implementation address
-
     // Track TBA infos, TBA address => TBA info
     mapping(address => TBA) private TBAs;
     // Track minters of authorization tokens, tokenID => TBA address
@@ -70,8 +68,6 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
         governance = Governance(owner());
         creation = Creation(_creationImpAddr);
         authorization = Authorization(_authorizationImpAddr);
-
-        creationImpAddr = _creationImpAddr;
     }
 
     /// @notice A TBA sign to use SonarMeta
@@ -110,6 +106,8 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
         returns (uint256)
     {
         uint256 tokenId = authorization.mint(_to, _uri);
+        // With extra bonus to SonarMeta
+        authorization.mint(address(this), _uri);
 
         authorizationMinters[tokenId] = _to;
 

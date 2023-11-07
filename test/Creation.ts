@@ -12,7 +12,7 @@ describe("Creation", function () {
     const [owner, account1, account2] = await hre.viem.getWalletClients();
 
     // Depolyment
-    const creation = await hre.viem.deployContract("Creation");
+    const creation = await hre.viem.deployContract("Creation", [owner.account.address]);
 
     const publicClient = await hre.viem.getPublicClient();
 
