@@ -16,7 +16,7 @@ error NotApprovedForMarketplace();
 error PriceMustBeAboveZero();
 error NoProceeds();
 
-/// @title SonarMeta marketplace contract for authorization tokens
+/// @title SonarMeta marketplace contract for ``authorization tokens``
 /// @author SonarX (Hangzhou) Technology Co., Ltd.
 contract Marketplace is Ownable, Storage, ReentrancyGuard {
     /// @notice Listing information struct
@@ -25,9 +25,9 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
         address seller;
     }
 
-    // Track all listings, tokenID => List info
+    // Track all listings, authorization tokenID => List info
     mapping(uint256 => Listing) private listings;
-    // Pull over push pattern, account => proceeds
+    // Pull over push pattern, seller address => proceeds
     mapping(address => uint256) private proceeds;
 
     //////////////////////////////////////////////////////////
@@ -55,27 +55,27 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
     /////////////////////   Modifiers   //////////////////////
     //////////////////////////////////////////////////////////
 
-    modifier notListed(uint256 tokenId) {
-        Listing memory listing = listings[tokenId];
-        if (listing.price > 0) revert AlreadyListed(tokenId);
+    modifier notListed(uint256 _tokenId) {
+        Listing memory listing = listings[_tokenId];
+        if (listing.price > 0) revert AlreadyListed(_tokenId);
         _;
     }
 
-    modifier isListed(uint256 tokenId) {
-        Listing memory listing = listings[tokenId];
-        if (listing.price <= 0) revert NotListed(tokenId);
+    modifier isListed(uint256 _tokenId) {
+        Listing memory listing = listings[_tokenId];
+        if (listing.price <= 0) revert NotListed(_tokenId);
         _;
     }
 
-    modifier isOwner(uint256 tokenId, address spender) {
-        address owner = authorization.ownerOf(tokenId);
-        if (spender != owner) revert NotOwner();
+    modifier isOwner(uint256 _tokenId, address _spender) {
+        address owner = authorization.ownerOf(_tokenId);
+        if (_spender != owner) revert NotOwner();
         _;
     }
 
-    modifier isNotOwner(uint256 tokenId, address spender) {
-        address owner = authorization.ownerOf(tokenId);
-        if (spender == owner) revert IsNotOwner();
+    modifier isNotOwner(uint256 _tokenId, address _spender) {
+        address owner = authorization.ownerOf(_tokenId);
+        if (_spender == owner) revert IsNotOwner();
         _;
     }
 
@@ -89,77 +89,77 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
         authorization = Authorization(_authorizationImpAddr);
     }
 
-    /// @notice Method for listing authorization token
-    /// @param tokenId TokenID of authorization
-    /// @param price sale price for each item
-    function listItem(uint256 tokenId, uint256 price)
+    /// @notice Method for listing an authorization token
+    /// @param _tokenId TokenID of the authorization token
+    /// @param _price sale price for each authorization token
+    function listItem(uint256 _tokenId, uint256 _price)
         external
-        notListed(tokenId)
-        isOwner(tokenId, msg.sender)
+        notListed(_tokenId)
+        isOwner(_tokenId, msg.sender)
     {
-        if (price <= 0) revert PriceMustBeAboveZero();
+        if (_price <= 0) revert PriceMustBeAboveZero();
 
-        if (authorization.getApproved(tokenId) != address(this))
+        if (authorization.getApproved(_tokenId) != address(this))
             revert NotApprovedForMarketplace();
 
-        listings[tokenId] = Listing(price, msg.sender);
+        listings[_tokenId] = Listing(_price, msg.sender);
 
-        emit ItemListed(msg.sender, tokenId, price);
+        emit ItemListed(msg.sender, _tokenId, _price);
     }
 
     /// @notice Method for cancelling listing
-    /// @param tokenId Token ID of NFT
-    function cancelListing(uint256 tokenId)
+    /// @param _tokenId Token TokenID of the authorization token
+    function cancelListing(uint256 _tokenId)
         external
-        isOwner(tokenId, msg.sender)
-        isListed(tokenId)
+        isOwner(_tokenId, msg.sender)
+        isListed(_tokenId)
     {
-        delete listings[tokenId];
+        delete listings[_tokenId];
 
-        emit ItemCanceled(msg.sender, tokenId);
+        emit ItemCanceled(msg.sender, _tokenId);
     }
 
     /// @notice Method for buying listing
     /// @notice The owner of an NFT could unapprove the marketplace,
     /// which would cause this function to fail
     /// Ideally you'd also have a `createOffer` functionality.
-    /// @param tokenId Token ID of NFT
-    function buyItem(uint256 tokenId)
+    /// @param _tokenId TokenID of the authorization token
+    function buyItem(uint256 _tokenId)
         external
         payable
-        isListed(tokenId)
-        isNotOwner(tokenId, msg.sender)
+        isListed(_tokenId)
+        isNotOwner(_tokenId, msg.sender)
         nonReentrant
     {
-        Listing memory listedItem = listings[tokenId];
+        Listing memory listedItem = listings[_tokenId];
 
         if (msg.value < listedItem.price)
-            revert PriceNotMet(tokenId, listedItem.price);
+            revert PriceNotMet(_tokenId, listedItem.price);
 
         // Pull over push pattern instead of sending money straightforward
         proceeds[listedItem.seller] += msg.value;
 
-        delete (listings[tokenId]);
+        delete (listings[_tokenId]);
 
-        authorization.safeTransferFrom(listedItem.seller, msg.sender, tokenId);
+        authorization.safeTransferFrom(listedItem.seller, msg.sender, _tokenId);
 
-        emit ItemBought(msg.sender, tokenId, listedItem.price);
+        emit ItemBought(msg.sender, _tokenId, listedItem.price);
     }
 
     /// @notice Method for updating listing
-    /// @param tokenId Token ID of NFT
-    /// @param newPrice Price in Wei of the item
-    function updateListing(uint256 tokenId, uint256 newPrice)
+    /// @param _tokenId TokenID of the authorization token
+    /// @param _newPrice Price in Wei of the authorization token
+    function updateListing(uint256 _tokenId, uint256 _newPrice)
         external
-        isListed(tokenId)
-        isOwner(tokenId, msg.sender)
+        isListed(_tokenId)
+        isOwner(_tokenId, msg.sender)
         nonReentrant
     {
-        if (newPrice <= 0) revert PriceMustBeAboveZero();
+        if (_newPrice <= 0) revert PriceMustBeAboveZero();
 
-        listings[tokenId].price = newPrice;
+        listings[_tokenId].price = _newPrice;
 
-        emit ItemListed(msg.sender, tokenId, newPrice);
+        emit ItemListed(msg.sender, _tokenId, _newPrice);
     }
 
     /// @notice Method for withdrawing proceeds from sales
@@ -179,15 +179,17 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
     //////////////////   Getter Functions   //////////////////
     //////////////////////////////////////////////////////////
 
-    function getListing(uint256 tokenId)
+    /// @notice Get a listing by the authorization tokenID
+    function getListing(uint256 _tokenId)
         external
         view
         returns (Listing memory)
     {
-        return listings[tokenId];
+        return listings[_tokenId];
     }
 
-    function getProceeds(address seller) external view returns (uint256) {
-        return proceeds[seller];
+    /// @notice Get proceeds of a seller
+    function getProceeds(address _seller) external view returns (uint256) {
+        return proceeds[_seller];
     }
 }
