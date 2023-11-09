@@ -10,7 +10,6 @@ error PriceNotMet(uint256 tokenId, uint256 price);
 error ItemNotForSale(uint256 tokenId);
 error NotListed(uint256 tokenId);
 error AlreadyListed(uint256 tokenId);
-error IsNotOwner();
 error NotOwner();
 error NotApprovedForMarketplace();
 error PriceMustBeAboveZero();
@@ -21,7 +20,8 @@ error NoProceeds();
 contract Marketplace is Ownable, Storage, ReentrancyGuard {
     /// @notice Listing information struct
     struct Listing {
-        uint256 price;
+        uint256 amount;
+        uint256 basePrice;
         address seller;
     }
 
@@ -38,7 +38,8 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
     event ItemListed(
         address indexed seller,
         uint256 indexed tokenId,
-        uint256 price
+        uint256 amount,
+        uint256 basePrice
     );
 
     /// @notice Emitted when a item is canceled
@@ -48,6 +49,7 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
     event ItemBought(
         address indexed buyer,
         uint256 indexed tokenId,
+        uint256 amount,
         uint256 price
     );
 
@@ -57,25 +59,19 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
 
     modifier notListed(uint256 _tokenId) {
         Listing memory listing = listings[_tokenId];
-        if (listing.price > 0) revert AlreadyListed(_tokenId);
+        if (listing.basePrice > 0) revert AlreadyListed(_tokenId);
         _;
     }
 
     modifier isListed(uint256 _tokenId) {
         Listing memory listing = listings[_tokenId];
-        if (listing.price <= 0) revert NotListed(_tokenId);
+        if (listing.basePrice <= 0) revert NotListed(_tokenId);
         _;
     }
 
     modifier isOwner(uint256 _tokenId, address _spender) {
-        address owner = authorization.ownerOf(_tokenId);
-        if (_spender != owner) revert NotOwner();
-        _;
-    }
-
-    modifier isNotOwner(uint256 _tokenId, address _spender) {
-        address owner = authorization.ownerOf(_tokenId);
-        if (_spender == owner) revert IsNotOwner();
+        uint256 value = authorization.balanceOf(_spender, _tokenId);
+        if (value <= 0) revert NotOwner();
         _;
     }
 
@@ -85,26 +81,27 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
 
     constructor(address _authorizationImpAddr) Ownable(msg.sender) {
         initializeReentrancyGuard();
-        
+
         authorization = Authorization(_authorizationImpAddr);
     }
 
     /// @notice Method for listing an authorization token
     /// @param _tokenId TokenID of the authorization token
-    /// @param _price sale price for each authorization token
-    function listItem(uint256 _tokenId, uint256 _price)
-        external
-        notListed(_tokenId)
-        isOwner(_tokenId, msg.sender)
-    {
-        if (_price <= 0) revert PriceMustBeAboveZero();
+    /// @param _basePrice base price for each authorization token
+    /// @param _amount Amount of the authorization token
+    function listItem(
+        uint256 _tokenId,
+        uint256 _basePrice,
+        uint256 _amount
+    ) external notListed(_tokenId) isOwner(_tokenId, msg.sender) {
+        if (_basePrice <= 0) revert PriceMustBeAboveZero();
 
-        if (authorization.getApproved(_tokenId) != address(this))
+        if (authorization.isApprovedForAll(address(this), msg.sender))
             revert NotApprovedForMarketplace();
 
-        listings[_tokenId] = Listing(_price, msg.sender);
+        listings[_tokenId] = Listing(_amount, _basePrice, msg.sender);
 
-        emit ItemListed(msg.sender, _tokenId, _price);
+        emit ItemListed(msg.sender, _tokenId, _amount, _basePrice);
     }
 
     /// @notice Method for cancelling listing
@@ -124,26 +121,32 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
     /// which would cause this function to fail
     /// Ideally you'd also have a `createOffer` functionality.
     /// @param _tokenId TokenID of the authorization token
-    function buyItem(uint256 _tokenId)
+    /// @param _amount Amount that the buyer wants
+    function buyItem(uint256 _tokenId, uint256 _amount)
         external
         payable
         isListed(_tokenId)
-        isNotOwner(_tokenId, msg.sender)
         nonReentrant
     {
         Listing memory listedItem = listings[_tokenId];
+        uint256 price = listedItem.basePrice * _amount;
 
-        if (msg.value < listedItem.price)
-            revert PriceNotMet(_tokenId, listedItem.price);
+        if (msg.value < price) revert PriceNotMet(_tokenId, price);
 
         // Pull over push pattern instead of sending money straightforward
         proceeds[listedItem.seller] += msg.value;
 
-        delete (listings[_tokenId]);
+        delete listings[_tokenId];
 
-        authorization.safeTransferFrom(listedItem.seller, msg.sender, _tokenId);
+        authorization.safeTransferFrom(
+            listedItem.seller,
+            msg.sender,
+            _tokenId,
+            _amount,
+            ""
+        );
 
-        emit ItemBought(msg.sender, _tokenId, listedItem.price);
+        emit ItemBought(msg.sender, _tokenId, _amount, price);
     }
 
     /// @notice Method for updating listing
@@ -157,9 +160,14 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
     {
         if (_newPrice <= 0) revert PriceMustBeAboveZero();
 
-        listings[_tokenId].price = _newPrice;
+        listings[_tokenId].basePrice = _newPrice;
 
-        emit ItemListed(msg.sender, _tokenId, _newPrice);
+        emit ItemListed(
+            msg.sender,
+            _tokenId,
+            listings[_tokenId].amount,
+            _newPrice
+        );
     }
 
     /// @notice Method for withdrawing proceeds from sales

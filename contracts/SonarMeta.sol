@@ -44,6 +44,14 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
         address indexed to
     );
 
+    /// @notice Emitted when contribution increased
+    event ContributionIncreased(
+        uint256 indexed authorizationId,
+        uint256 amount,
+        address indexed from,
+        address indexed to
+    );
+
     //////////////////////////////////////////////////////////
     /////////////////////   Modifiers   //////////////////////
     //////////////////////////////////////////////////////////
@@ -97,17 +105,16 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
 
     /// @notice Mint a new authorization token for a TBA
     /// @param _to The TBA the minter of the new authorization token
-    /// @param _uri The tokenURI the metadata of the new authorization token needs
     /// @return The tokenID of the new authorization token
-    function mintAuthorization(address _to, string memory _uri)
+    function mintAuthorization(address _to)
         external
         onlySignedTBA(_to)
         nonReentrant
         returns (uint256)
     {
-        uint256 tokenId = authorization.mint(_to, _uri);
-        // With extra bonus to SonarMeta
-        authorization.mint(address(this), _uri);
+        uint256 tokenId = authorization.mintNew(_to, "");
+        // With extra 10 bonus to SonarMeta
+        authorization.increaseContribution(address(this), tokenId, 10, "");
 
         authorizationMinters[tokenId] = _to;
 
@@ -143,7 +150,7 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
             "This TBA has been already authorized."
         );
 
-        authorization.safeTransferFrom(_from, _to, _authorizationId);
+        authorization.increaseContribution(_to, _authorizationId, 1, "");
 
         tba.stakeholders[_to] = true;
         tba.stakeholderCount++;
@@ -151,6 +158,40 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
         emit Authorized(_authorizationId, _from, _to);
 
         return tba.stakeholderCount;
+    }
+
+    /// @notice Increase contribution from a TBA to another TBA
+    /// @param _from The TBA which will publish the authorization token
+    /// @param _to The TBA which will receive the authorization token
+    /// @param _authorizationId The tokenID of the given authorization token
+    /// @param _amount The contribution value that the minter wants to give
+    /// @return The total contribution amount of _to
+    function increaseContribution(
+        address _from,
+        address _to,
+        uint256 _authorizationId,
+        uint256 _amount
+    )
+        external
+        onlySignedTBA(_from)
+        onlySignedTBA(_to)
+        nonReentrant
+        returns (uint256)
+    {
+        require(
+            authorizationMinters[_authorizationId] == _from,
+            "Authorization token must be increased by its minter."
+        );
+        require(
+            TBAs[_from].stakeholders[_to],
+            "This TBA has not been authorized yet."
+        );
+
+        authorization.increaseContribution(_to, _authorizationId, _amount, "");
+
+        emit ContributionIncreased(_authorizationId, _amount, _from, _to);
+
+        return authorization.balanceOf(_to, _authorizationId);
     }
 
     //////////////////////////////////////////////////////////
