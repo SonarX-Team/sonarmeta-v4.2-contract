@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 
 async function main() {
-  const NETWORK = "arbitrumGoerli"; // Set before deployment
+  const NETWORK = "goerli"; // Set before deployment
 
   // Contracts are deployed using the first signer/account by default
   const [owner] = await hre.viem.getWalletClients();

@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Storage.sol";
 import "./Creation.sol";
 import "./Authorization.sol";
+import "./IPDAO.sol";
 import "./utils/ReentrancyGuard.sol";
 import "./utils/Counters.sol";
 
@@ -23,6 +24,8 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
     mapping(address => TBA) private TBAs;
     // Track minters of authorization tokens, tokenID => TBA address
     mapping(uint256 => address) private authorizationMinters;
+
+    address private creationImpAddr;
 
     //////////////////////////////////////////////////////////
     ///////////////////////   Events   ///////////////////////
@@ -76,6 +79,8 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
         governance = Governance(owner());
         creation = Creation(_creationImpAddr);
         authorization = Authorization(_authorizationImpAddr);
+
+        creationImpAddr = _creationImpAddr;
     }
 
     /// @notice A TBA sign to use SonarMeta
@@ -123,7 +128,7 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
         return tokenId;
     }
 
-    /// @notice Authorize from a TBA to another TBA
+    /// @notice Authorize from a TBA to another TBA (increase 1 contribution)
     /// @param _from The TBA which will publish the authorization token
     /// @param _to The TBA which will receive the authorization token
     /// @param _authorizationId The tokenID of the given authorization token
@@ -192,6 +197,13 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
         emit ContributionIncreased(_authorizationId, _amount, _from, _to);
 
         return authorization.balanceOf(_to, _authorizationId);
+    }
+
+    /// @notice Deploy a new IP DAO
+    function createIpDao() external nonReentrant returns (address) {
+        IPDAO ipDao = new IPDAO(creationImpAddr);
+
+        return address(ipDao);
     }
 
     //////////////////////////////////////////////////////////

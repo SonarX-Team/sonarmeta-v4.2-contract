@@ -16,6 +16,10 @@ contract Creation is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         Ownable(initialOwner)
     {}
 
+    function _baseURI() internal pure override returns (string memory) {
+        return "https://en.sonarmeta.com/api/metadata/creation/{id}";
+    }
+
     function mint(address to, string memory uri)
         public
         onlyOwner

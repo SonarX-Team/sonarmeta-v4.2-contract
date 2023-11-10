@@ -10,7 +10,10 @@ contract Authorization is ERC1155, Ownable, ERC1155Supply {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIdCounter;
 
-    constructor(address initialOwner) ERC1155("") Ownable(initialOwner) {}
+    constructor(address initialOwner)
+        ERC1155("https://en.sonarmeta.com/api/metadata/authorization/{id}")
+        Ownable(initialOwner)
+    {}
 
     function setURI(string memory newuri) public onlyOwner {
         _setURI(newuri);
@@ -35,6 +38,8 @@ contract Authorization is ERC1155, Ownable, ERC1155Supply {
         uint256 amount,
         bytes memory data
     ) public onlyOwner returns (uint256[] memory) {
+        require(to != address(0), "Destination address can't be zero.");
+
         uint256[] memory ids = new uint256[](amount);
         uint256[] memory amounts = new uint256[](amount);
 
@@ -57,6 +62,8 @@ contract Authorization is ERC1155, Ownable, ERC1155Supply {
         uint256 amount,
         bytes memory data
     ) public onlyOwner {
+        require(to != address(0), "Destination address can't be zero.");
+
         _mint(to, tokenId, amount, data);
     }
 
