@@ -8,6 +8,8 @@ async function main() {
   // Contracts are deployed using the first signer/account by default
   const [owner] = await hre.viem.getWalletClients();
 
+  console.log(owner);
+
   console.log("Deploying...");
 
   console.log("Deploying Creation contract...");
@@ -28,7 +30,7 @@ async function main() {
   // Transfer Ownership
   await creation.write.transferOwnership([main.address]);
   await authorization.write.transferOwnership([main.address]);
-  
+
   console.log("Deployed!");
 
   // Save the addresses

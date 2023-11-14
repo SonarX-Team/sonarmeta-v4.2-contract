@@ -1,7 +1,7 @@
 {
-    "main": "0x9e35edd5053f5979514fea4d0e976d7ef557836a",
-    "governance": "0xaa52fb445938ebccf9959e58ad395db7a41a8127",
-    "creation": "0xaf0925eb9022553e25d6e2b5fac9be4a2a42f95a",
-    "authorization": "0x14923b8e10fc6daa5685910755be8754389b5de1",
-    "marketplace": "0x5edca0beb44b1d94b50debce722e8ffb3bcbee5c"
+    "main": "0x0848cce0741782029c399b347c5bf9152d34b5c4",
+    "governance": "0x241054802d75820de80842915dd47da274df45b9",
+    "creation": "0x5b8ac6c85940406f3b325b812afec24d7c028c05",
+    "authorization": "0x01b4de2b49f59318cf74ed23a16f50187fe05039",
+    "marketplace": "0xb4990973c9a39ecfa702bf164f4174f7535436ad"
 }

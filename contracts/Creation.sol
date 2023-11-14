@@ -12,25 +12,20 @@ contract Creation is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
     Counters.Counter private _tokenIdCounter;
 
     constructor(address initialOwner)
-        ERC721("Creation", "SMCT")
+        ERC721("SonarMeta Creation Network Node", "SMCNN")
         Ownable(initialOwner)
     {}
 
     function _baseURI() internal pure override returns (string memory) {
-        return "https://en.sonarmeta.com/api/metadata/creation/{id}";
+        return "https://en.sonarmeta.com/api/metadata/creation/";
     }
 
-    function mint(address to, string memory uri)
-        public
-        onlyOwner
-        returns (uint256)
-    {
+    function mint(address to) public onlyOwner returns (uint256) {
         require(to != address(0), "Destination address can't be zero.");
 
         _tokenIdCounter.increment();
         uint256 tokenId = _tokenIdCounter.current();
         _safeMint(to, tokenId);
-        _setTokenURI(tokenId, uri);
 
         return tokenId;
     }

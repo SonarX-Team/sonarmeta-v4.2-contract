@@ -7,7 +7,7 @@ import "./utils/ReentrancyGuard.sol";
 
 /// @title SonarMeta IP DAO contract
 /// @author SonarX (Hangzhou) Technology Co., Ltd.
-contract IPDAO is Ownable, ReentrancyGuard {
+contract IpDao is Ownable, ReentrancyGuard {
     struct Submission {
         address submitter;
         uint256 weight; // Percentage weight%
@@ -61,10 +61,15 @@ contract IPDAO is Ownable, ReentrancyGuard {
     ///////////////////   Main Functions   ///////////////////
     //////////////////////////////////////////////////////////
 
-    constructor(address _creationImpAddr) Ownable(msg.sender) {
+    constructor(address _initialOwner, address _creationImpAddr)
+        Ownable(_initialOwner)
+    {
         initializeReentrancyGuard();
 
         creation = Creation(_creationImpAddr);
+
+        members[_initialOwner] = true;
+        memberCount++;
     }
 
     /// @notice Add a member to this IP DAO by its owner
@@ -96,7 +101,6 @@ contract IPDAO is Ownable, ReentrancyGuard {
     }
 
     /// @notice Submit creation/component token to a TBA
-    /// Postcondition: Must call submitCreation in SonarMeta after
     /// @param _to The destination TBA address (Must be a TBA)
     /// @param _creationId The tokenID of the creation/component token
     /// @param _weight The weight that set to this submission
@@ -138,11 +142,11 @@ contract IPDAO is Ownable, ReentrancyGuard {
         //     "Withdraw can only be done with a TBA owned by this IP DAO."
         // );
 
-        uint256[] memory tokensOwnedByTBA = creation.getTokenIds(_tbaAddr);
+        uint256[] memory tokensOwnedByTba = creation.getTokenIds(_tbaAddr);
         uint256 totalWeight;
 
-        for (uint256 i = 0; i < tokensOwnedByTBA.length; i++) {
-            Submission memory submission = submissions[tokensOwnedByTBA[i]];
+        for (uint256 i = 0; i < tokensOwnedByTba.length; i++) {
+            Submission memory submission = submissions[tokensOwnedByTba[i]];
 
             if (submission.submitter == msg.sender)
                 totalWeight += submission.weight;

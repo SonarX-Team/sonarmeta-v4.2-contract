@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Storage.sol";
 import "./Creation.sol";
 import "./Authorization.sol";
-import "./IPDAO.sol";
+import "./IpDao.sol";
 import "./utils/ReentrancyGuard.sol";
 import "./utils/Counters.sol";
 
@@ -13,17 +13,19 @@ import "./utils/Counters.sol";
 /// @author SonarX (Hangzhou) Technology Co., Ltd.
 contract SonarMeta is Ownable, Storage, ReentrancyGuard {
     /// @notice TBA information struct
-    struct TBA {
+    struct Tba {
         bool isSigned; // If this TBA is signed to use SonarMeta
         mapping(address => bool) stakeholders; // All Stakeholder TBAs of this TBA
-        uint stakeholderCount; // The amount of stakeholder TBAs of this TBA
+        uint256 stakeholderCount; // The amount of stakeholder TBAs of this TBA
         uint256 nodeValue; // The value of this TBA
     }
 
     // Track TBA infos, TBA address => TBA info
-    mapping(address => TBA) private TBAs;
+    mapping(address => Tba) private Tbas;
     // Track minters of authorization tokens, tokenID => TBA address
     mapping(uint256 => address) private authorizationMinters;
+    // Track all IP DAOs deployed by SonarMeta
+    mapping(address => bool) private ipDaos;
 
     address private creationImpAddr;
 
@@ -32,7 +34,7 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
     //////////////////////////////////////////////////////////
 
     /// @notice Emitted when a TBA is signed to use SonarMeta
-    event TBASigned(address indexed tbaAddr);
+    event TbaSigned(address indexed tbaAddr);
 
     /// @notice Emitted when authorization tokens are minted
     event AuthorizationMinted(
@@ -55,13 +57,16 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
         address indexed to
     );
 
+    /// @notice Emitted when an IP DAO is deployed
+    event IpDaoDeployed(address indexed ipDaoAddr);
+
     //////////////////////////////////////////////////////////
     /////////////////////   Modifiers   //////////////////////
     //////////////////////////////////////////////////////////
 
-    modifier onlySignedTBA(address _tbaAddr) {
+    modifier onlySignedTba(address _tbaAddr) {
         require(
-            TBAs[_tbaAddr].isSigned,
+            Tbas[_tbaAddr].isSigned,
             "Address provided must be a signed TBA towards SonarMeta."
         );
         _;
@@ -86,24 +91,19 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
     /// @notice A TBA sign to use SonarMeta
     /// @param _tbaAddr The TBA address wants to sign
     function signToUseSonarMeta(address _tbaAddr) external nonReentrant {
-        TBA storage tba = TBAs[_tbaAddr];
+        Tba storage tba = Tbas[_tbaAddr];
         tba.isSigned = true;
 
-        emit TBASigned(_tbaAddr);
+        emit TbaSigned(_tbaAddr);
     }
 
     /// @notice Create a new creation/component token
     /// Currently in the demo version, every component of a co-creation MUST be a SonarMeta creation
     /// because we only use these components to calculate the proceeds of every co-creation member
     /// @param _to The account the owner of the new creation/component token
-    /// @param _uri The tokenURI the metadata of the new creation/component token needs
     /// @return The tokenID of the new creation/component token
-    function mintCreation(address _to, string memory _uri)
-        external
-        nonReentrant
-        returns (uint256)
-    {
-        uint256 tokenId = creation.mint(_to, _uri);
+    function mintCreation(address _to) external nonReentrant returns (uint256) {
+        uint256 tokenId = creation.mint(_to);
 
         return tokenId;
     }
@@ -113,7 +113,7 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
     /// @return The tokenID of the new authorization token
     function mintAuthorization(address _to)
         external
-        onlySignedTBA(_to)
+        onlySignedTba(_to)
         nonReentrant
         returns (uint256)
     {
@@ -139,12 +139,12 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
         uint256 _authorizationId
     )
         external
-        onlySignedTBA(_from)
-        onlySignedTBA(_to)
+        onlySignedTba(_from)
+        onlySignedTba(_to)
         nonReentrant
         returns (uint256)
     {
-        TBA storage tba = TBAs[_from];
+        Tba storage tba = Tbas[_from];
 
         require(
             authorizationMinters[_authorizationId] == _from,
@@ -178,8 +178,8 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
         uint256 _amount
     )
         external
-        onlySignedTBA(_from)
-        onlySignedTBA(_to)
+        onlySignedTba(_from)
+        onlySignedTba(_to)
         nonReentrant
         returns (uint256)
     {
@@ -188,7 +188,7 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
             "Authorization token must be increased by its minter."
         );
         require(
-            TBAs[_from].stakeholders[_to],
+            Tbas[_from].stakeholders[_to],
             "This TBA has not been authorized yet."
         );
 
@@ -200,33 +200,59 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
     }
 
     /// @notice Deploy a new IP DAO
-    function createIpDao() external nonReentrant returns (address) {
-        IPDAO ipDao = new IPDAO(creationImpAddr);
+    function deployIpDao() external nonReentrant returns (address) {
+        IpDao ipDao = new IpDao(msg.sender, creationImpAddr);
+        address ipDaoAddr = address(ipDao);
 
-        return address(ipDao);
+        ipDaos[ipDaoAddr] = true;
+
+        emit IpDaoDeployed(ipDaoAddr);
+
+        return ipDaoAddr;
     }
 
     //////////////////////////////////////////////////////////
     //////////////////   Getter Functions   //////////////////
     //////////////////////////////////////////////////////////
 
+    /// @notice Check if a TBA is signed
+    function isTbaSigned(address _tbaAddr) external view returns (bool) {
+        return Tbas[_tbaAddr].isSigned;
+    }
+
+    /// @notice Check if a TBA is another TBA's stakeholder
+    function isStakeholder(address _stakeholderAddr, address _tbaAddr)
+        external
+        view
+        onlySignedTba(_stakeholderAddr)
+        onlySignedTba(_tbaAddr)
+        returns (bool)
+    {
+        return Tbas[_tbaAddr].stakeholders[_stakeholderAddr];
+    }
+
     /// @notice Get the total amount of stakeholders of a TBA
     function getStakeholderCount(address _tbaAddr)
         external
         view
-        onlySignedTBA(_tbaAddr)
+        onlySignedTba(_tbaAddr)
         returns (uint256)
     {
-        return TBAs[_tbaAddr].stakeholderCount;
+        return Tbas[_tbaAddr].stakeholderCount;
     }
 
     /// @notice Get the nodeValue of a TBA
     function getNodeValue(address _tbaAddr)
         external
         view
-        onlySignedTBA(_tbaAddr)
+        onlySignedTba(_tbaAddr)
         returns (uint256)
     {
-        return TBAs[_tbaAddr].nodeValue;
+        return Tbas[_tbaAddr].nodeValue;
+    }
+
+    /// @notice Check if an IP DAO is tracked
+    function isIpDaoTracked(address _ipDaoAddr) external view returns (bool) {
+        return ipDaos[_ipDaoAddr];
     }
 }
