@@ -15,7 +15,7 @@ error NotApprovedForMarketplace();
 error PriceMustBeAboveZero();
 error NoProceeds();
 
-/// @title SonarMeta marketplace contract for ``authorization tokens``
+/// @title SonarMeta marketplace contract for `authorization tokens`
 /// @author SonarX (Hangzhou) Technology Co., Ltd.
 contract Marketplace is Ownable, Storage, ReentrancyGuard {
     /// @notice Listing information struct
