@@ -54,12 +54,9 @@ describe("Creation", function () {
         walletClient: account1,
       });
 
-      await expect(
-        contract.write.mint([
-          "0x0000000000000000000000000000000000000000",
-          "https://en.sonarmeta.com/api/metadata/creation/1",
-        ])
-      ).to.be.rejectedWith("Destination address can't be zero.");
+      await expect(contract.write.mint(["0x0000000000000000000000000000000000000000"])).to.be.rejectedWith(
+        "Destination address can't be zero."
+      );
     });
 
     it("Should mint a token successfully", async function () {
@@ -71,21 +68,17 @@ describe("Creation", function () {
       });
 
       let tokenId = 1n;
-      let uri = "https://en.sonarmeta.com/api/metadata/creation/1";
 
-      await contract.write.mint([getAddress(account2.account.address), uri]);
+      await contract.write.mint([getAddress(account2.account.address)]);
 
       expect(await contract.read.ownerOf([tokenId])).to.be.equal(getAddress(account2.account.address));
-      expect(await contract.read.tokenURI([tokenId])).to.be.equal(uri);
       expect(await contract.read.balanceOf([getAddress(account2.account.address)])).to.be.equal(1n);
 
       tokenId = 2n;
-      uri = "https://en.sonarmeta.com/api/metadata/creation/2";
 
-      await contract.write.mint([getAddress(account2.account.address), uri]);
+      await contract.write.mint([getAddress(account2.account.address)]);
 
       expect(await contract.read.ownerOf([tokenId])).to.be.equal(getAddress(account2.account.address));
-      expect(await contract.read.tokenURI([tokenId])).to.be.equal(uri);
       expect(await contract.read.balanceOf([getAddress(account2.account.address)])).to.be.equal(2n);
     });
   });

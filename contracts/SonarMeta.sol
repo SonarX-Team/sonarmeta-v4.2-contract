@@ -73,17 +73,17 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
         _;
     }
 
-    modifier onlyHolder(address _host, address _holder) {
+    modifier onlyHolder(address _issuer, address _holder) {
         require(
-            tbas[_host].stakeholders[_holder],
+            tbas[_issuer].stakeholders[_holder],
             "This TBA has not been authorized (a stakeholder) yet."
         );
         _;
     }
 
-    modifier onlyNotHolder(address _host, address _holder) {
+    modifier onlyNotHolder(address _issuer, address _holder) {
         require(
-            !tbas[_host].stakeholders[_holder],
+            !tbas[_issuer].stakeholders[_holder],
             "This TBA has been already (a stakeholder) authorized."
         );
         _;
@@ -105,7 +105,7 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
         creationImpAddr = _creationImpAddr;
     }
 
-    /// @notice Create a new creation/component token
+    /// @notice Mint a new creation/component token
     /// @param _to The account the owner of the new creation/component token
     /// @return The tokenID of the new creation/component token
     function mintCreation(address _to) external nonReentrant returns (uint256) {
@@ -117,7 +117,7 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
     /// @notice A TBA sign to use SonarMeta
     /// @param _tbaAddr The TBA address wants to sign
     /// @param _tokenId The creation tokenID corresponding to this TBA
-    function signToUseSonarMeta(address _tbaAddr, uint256 _tokenId)
+    function signToUse(address _tbaAddr, uint256 _tokenId)
         external
         nonReentrant
     {
@@ -127,6 +127,18 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
         tbas[_tbaAddr].tokenId = _tokenId;
 
         emit TbaSigned(_tbaAddr);
+    }
+
+    /// @notice Mint a corresponding authorization token to activate authorization functionality
+    /// @param _tbaAddr The TBA address wants to activate authorization
+    /// @param _tokenId The creation tokenID corresponding to this TBA
+    function activateAuthorization(address _tbaAddr, uint256 _tokenId)
+        external
+        onlySignedTba(_tbaAddr)
+        onlyIssuer(_tbaAddr, _tokenId)
+        nonReentrant
+    {
+        authorization.claimNew(_tbaAddr, _tokenId);
     }
 
     /// @notice Authorize from a TBA to another TBA (increase 1 contribution)
@@ -149,16 +161,7 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
     {
         Tba storage tba = tbas[_from];
 
-        require(
-            !tba.stakeholders[_to],
-            "This TBA has been already authorized."
-        );
-
-        // Generate a new authorization token corresponding to this creation token
-        // if this is the first time this creation token issues authorization
-        authorization.authorize(_to, _tokenId, "");
-        // With extra 10 bonus to SonarMeta
-        authorization.increase(address(this), _tokenId, 10, "");
+        authorization.increase(_to, _tokenId, 1);
 
         tba.stakeholders[_to] = true;
         tba.stakeholderCount++;
@@ -188,7 +191,7 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
         nonReentrant
         returns (uint256)
     {
-        authorization.increase(_to, _tokenId, _amount, "");
+        authorization.increase(_to, _tokenId, _amount);
 
         emit Contributed(_tokenId, _amount, _from, _to);
 

@@ -7,10 +7,8 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 
 /// @title SonarMeta authorization contract
 /// @author SonarX (Hangzhou) Technology Co., Ltd.
-/// ERC-1155:  authorization tokenID => ( creation tbaAddr => contribution amount )
-/// One authorization tokenID only represents for one Creation tokenID (1:1)
-/// Calling mintNew means that a new tokenID occurs
-/// Increase contribution must point to a existing tokenID
+/// @notice ERC-1155: authorization tokenID => ( creation tbaAddr => contribution amount )
+/// One authorization tokenID only represents for one Creation tokenID (tokenIDs are the same)
 contract Authorization is ERC1155, Ownable, ERC1155Supply {
     constructor(address _initialOwner)
         ERC1155("https://en.sonarmeta.com/api/metadata/authorization/{id}")
@@ -21,26 +19,25 @@ contract Authorization is ERC1155, Ownable, ERC1155Supply {
         _setURI(_newuri);
     }
 
-    function authorize(
-        address _to,
-        uint256 _tokenId,
-        bytes memory _data
-    ) public onlyOwner {
+    function claimNew(address _to, uint256 _tokenId) public onlyOwner {
         require(_to != address(0), "Destination address can't be zero.");
+        require(
+            !exists(_tokenId),
+            "The given tokenID has been already claimed."
+        );
 
-        _mint(_to, _tokenId, 1, _data);
+        _mint(_to, _tokenId, 1, "");
     }
 
     function increase(
         address _to,
         uint256 _tokenId,
-        uint256 _amount,
-        bytes memory _data
+        uint256 _amount
     ) public onlyOwner {
         require(_to != address(0), "Destination address can't be zero.");
-        require(exists(_tokenId), "The given tokenID doesn't exist");
+        require(exists(_tokenId), "The given tokenID doesn't exist.");
 
-        _mint(_to, _tokenId, _amount, _data);
+        _mint(_to, _tokenId, _amount, "");
     }
 
     // The following functions are overrides required by Solidity.

@@ -8,8 +8,6 @@ async function main() {
   // Contracts are deployed using the first signer/account by default
   const [owner] = await hre.viem.getWalletClients();
 
-  console.log(owner);
-
   console.log("Deploying...");
 
   console.log("Deploying Creation contract...");
