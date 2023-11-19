@@ -10,9 +10,14 @@ const config: HardhatUserConfig = {
     sepolia: {
       url: "https://sepolia.infura.io/v3/2b7300b9852a435d86a5dc856e462c0e",
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+      gasPrice: 35000000000,
     },
     goerli: {
       url: "https://goerli.infura.io/v3/2b7300b9852a435d86a5dc856e462c0e",
+      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    },
+    polygonMumbai: {
+      url: "https://polygon-mumbai-pokt.nodies.app",
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
     lineaGoerli: {

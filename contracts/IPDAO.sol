@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Creation.sol";
 import "./utils/ReentrancyGuard.sol";
 
 /// @title SonarMeta IP DAO contract
 /// @author SonarX (Hangzhou) Technology Co., Ltd.
-contract IpDao is Ownable, ReentrancyGuard {
+contract IpDao is ERC721Holder, Ownable, ReentrancyGuard {
     struct Submission {
         address submitter;
         uint256 weight; // Percentage weight%

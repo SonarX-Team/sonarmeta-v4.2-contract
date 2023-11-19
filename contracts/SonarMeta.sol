@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Storage.sol";
 import "./Creation.sol";
@@ -11,13 +12,13 @@ import "./utils/Counters.sol";
 
 /// @title SonarMeta main contract
 /// @author SonarX (Hangzhou) Technology Co., Ltd.
-contract SonarMeta is Ownable, Storage, ReentrancyGuard {
+contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
     /// @notice TBA information struct
     struct Tba {
         bool isSigned; // If this TBA is signed to use SonarMeta
         uint256 tokenId; // The tokenID of the corresponding creation
-        mapping(address => bool) stakeholders; // All Stakeholder TBAs of this TBA
-        uint256 stakeholderCount; // The amount of stakeholder TBAs of this TBA
+        mapping(address => bool) holders; // All holder TBAs of this TBA
+        uint256 holderCount; // The amount of holder TBAs of this TBA
         uint256 nodeValue; // The value of this TBA
     }
 
@@ -75,16 +76,16 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
 
     modifier onlyHolder(address _issuer, address _holder) {
         require(
-            tbas[_issuer].stakeholders[_holder],
-            "This TBA has not been authorized (a stakeholder) yet."
+            tbas[_issuer].holders[_holder],
+            "This TBA has not been authorized (a holder) yet."
         );
         _;
     }
 
     modifier onlyNotHolder(address _issuer, address _holder) {
         require(
-            !tbas[_issuer].stakeholders[_holder],
-            "This TBA has been already (a stakeholder) authorized."
+            !tbas[_issuer].holders[_holder],
+            "This TBA has been already (a holder) authorized."
         );
         _;
     }
@@ -145,7 +146,7 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
     /// @param _from The TBA which will publish the authorization token
     /// @param _to The TBA which will receive the authorization token
     /// @param _tokenId The tokenID of the creation token
-    /// @return The total stakeholder amount of the creation
+    /// @return The total holder amount of the creation
     function authorize(
         address _from,
         address _to,
@@ -162,13 +163,15 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
         Tba storage tba = tbas[_from];
 
         authorization.increase(_to, _tokenId, 1);
+        // With 10 bonus to SonarMeta
+        authorization.increase(address(this), _tokenId, 10);
 
-        tba.stakeholders[_to] = true;
-        tba.stakeholderCount++;
+        tba.holders[_to] = true;
+        tba.holderCount++;
 
         emit Authorized(_tokenId, _from, _to);
 
-        return tba.stakeholderCount;
+        return tba.holderCount;
     }
 
     /// @notice Increase contribution from a TBA to another TBA
@@ -191,7 +194,11 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
         nonReentrant
         returns (uint256)
     {
+        require(_amount > 0, "Contribution amount must be above 0.");
+
         authorization.increase(_to, _tokenId, _amount);
+        // With 10 bonus to SonarMeta
+        authorization.increase(address(this), _tokenId, 10);
 
         emit Contributed(_tokenId, _amount, _from, _to);
 
@@ -240,25 +247,25 @@ contract SonarMeta is Ownable, Storage, ReentrancyGuard {
         return tbas[_tbaAddr].isSigned;
     }
 
-    /// @notice Check if a TBA is another TBA's stakeholder
-    function isStakeholder(address _stakeholderAddr, address _tbaAddr)
+    /// @notice Check if a TBA is another TBA's holder
+    function isHolder(address _holderAddr, address _tbaAddr)
         external
         view
-        onlySignedTba(_stakeholderAddr)
+        onlySignedTba(_holderAddr)
         onlySignedTba(_tbaAddr)
         returns (bool)
     {
-        return tbas[_tbaAddr].stakeholders[_stakeholderAddr];
+        return tbas[_tbaAddr].holders[_holderAddr];
     }
 
-    /// @notice Get the total amount of stakeholders of a TBA
-    function getStakeholderCount(address _tbaAddr)
+    /// @notice Get the total amount of holders of a TBA
+    function getHolderCount(address _tbaAddr)
         external
         view
         onlySignedTba(_tbaAddr)
         returns (uint256)
     {
-        return tbas[_tbaAddr].stakeholderCount;
+        return tbas[_tbaAddr].holderCount;
     }
 
     /// @notice Get the nodeValue of a TBA
