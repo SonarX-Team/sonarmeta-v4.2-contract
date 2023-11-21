@@ -68,7 +68,7 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
         uint256 _amount,
         uint256 _basePrice
     ) external {
-        if (authorization.isApprovedForAll(msg.sender, address(this)))
+        if (!authorization.isApprovedForAll(msg.sender, address(this)))
             revert NotApprovedForMarketplace();
 
         if (_basePrice <= 0) revert PriceMustBeAboveZero();
@@ -101,9 +101,6 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
         address _seller,
         uint256 _amount
     ) external payable nonReentrant {
-        if (authorization.isApprovedForAll(msg.sender, address(this)))
-            revert NotApprovedForMarketplace();
-
         Listing storage listedItem = listings[_tokenId][_seller];
         uint256 price = listedItem.basePrice * _amount;
 

@@ -17,7 +17,7 @@ const config: HardhatUserConfig = {
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
     polygonMumbai: {
-      url: "https://polygon-mumbai-pokt.nodies.app",
+      url: "https://polygon-mumbai.infura.io/v3/2b7300b9852a435d86a5dc856e462c0e",
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
     lineaGoerli: {
