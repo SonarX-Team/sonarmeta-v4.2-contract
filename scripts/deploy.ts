@@ -11,10 +11,10 @@ async function main() {
   console.log("Deploying...");
 
   console.log("Deploying Creation contract...");
-  const creation = await hre.viem.deployContract("Creation", [owner.account.address]);
+  const creation = await hre.viem.deployContract("CreationCollection", [owner.account.address]);
 
   console.log("Deploying Authorization contract...");
-  const authorization = await hre.viem.deployContract("Authorization", [owner.account.address]);
+  const authorization = await hre.viem.deployContract("AuthorizationCollection");
 
   console.log("Deploying Marketplace contract...");
   const marketplace = await hre.viem.deployContract("Marketplace", [authorization.address]);
@@ -24,6 +24,12 @@ async function main() {
 
   console.log("Deploying SonarMeta main contract...");
   const main = await hre.viem.deployContract("SonarMeta", [creation.address, authorization.address]);
+
+  console.log("Deploying ERC-6551 registry contract...");
+  const registry = await hre.viem.deployContract("ERC6551Registry");
+
+  console.log("Deploying ERC-6551 account contract...");
+  const tokenbound = await hre.viem.deployContract("ERC6551Account");
 
   // Transfer Ownership
   await creation.write.transferOwnership([main.address]);
@@ -38,6 +44,8 @@ async function main() {
     creation: creation.address,
     authorization: authorization.address,
     marketplace: marketplace.address,
+    registry: registry.address,
+    tokenbound: tokenbound.address,
   };
 
   console.log(addresses);

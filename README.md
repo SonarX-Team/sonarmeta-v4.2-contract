@@ -46,19 +46,12 @@ Since we believe that technical adaptation is ultimately a matter of time. A cre
 
 ## Scripts simulating frontend implementations
 
-### User sign in and auth
-
-### Create a Network node (mint a creation NFT)
-
-### Deploy, sign, and activate the corresponding Token-bound account
-
-### Authorize to create a network edge (mint a authorization collection token)
-
-### Give bonus to a holder node (mint authorization NFT tokens)
-
-### List authorization tokens to the marketplace
-
-### Buy authorization tokens on the marketplace
+- Create a Network node (mint a creation NFT) - scripts/create-node.ts
+- Deploy, sign, and activate the corresponding Token-bound account - scripts/tokenbound-accounts.ts
+- Authorize to create a network edge (mint a authorization collection token) - scripts/authorize.ts
+- Give bonus to a holder node (mint authorization NFT tokens) - scripts/give-bonus.ts
+- List authorization tokens to the marketplace - scripts/list-to-marketplace.ts
+- Buy authorization tokens on the marketplace - scripts/buy-from-marketplace.ts
 
 ## Wait... still have something to say in person (CEO of SonarMeta)
 
