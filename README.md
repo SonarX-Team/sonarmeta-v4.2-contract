@@ -40,20 +40,20 @@ First and foremost, We would like to extend our sincere respect to the founders 
 
 But today, Lukso has indeed solved our concerns. Although the idea we came up with lives for only three months, we want you to know a feedback from us that your efforts have truly addressed the challenges faced by dApp developers focusing on creative communities. Well done!
 
+## Frontend simulations
+
 Unfortunately, for the entire first 20 days of November, we were working on implementing our demo using ERC and MetaMask and deploying it on Polygon Mumbai. Before that, we had not heard about Lukso. So, when we saw buildup#2 a few days ago and spent a few more days learning about LSP and UP, it was too late for us to adapt the entire contract and website code to LSP and the browser extensions. However, in these past two days, we managed to complete the implementation of the LSP contract and the simulated typescript code. We still hope to participate in this hackathon to have a chance to let you see our demo and video.
 
 Since we believe that technical adaptation is ultimately a matter of time. A creative idea and use case, along with a convincing business model, should still be the focal points that you favor more in this hackathon.
 
-## Scripts simulating frontend implementations
+- Create a Network node (mint a creation NFT) - ./scripts/create-node.ts
+- Deploy, sign, and activate the corresponding Token-bound account - ./scripts/tokenbound-accounts.ts
+- Authorize to create a network edge (mint a authorization collection token) - ./scripts/authorize.ts
+- Give bonus to a holder node (mint authorization NFT tokens) - ./scripts/give-bonus.ts
+- List authorization tokens to the marketplace - ./scripts/list-to-marketplace.ts
+- Buy authorization tokens on the marketplace - ./scripts/buy-from-marketplace.ts
 
-- Create a Network node (mint a creation NFT) - scripts/create-node.ts
-- Deploy, sign, and activate the corresponding Token-bound account - scripts/tokenbound-accounts.ts
-- Authorize to create a network edge (mint a authorization collection token) - scripts/authorize.ts
-- Give bonus to a holder node (mint authorization NFT tokens) - scripts/give-bonus.ts
-- List authorization tokens to the marketplace - scripts/list-to-marketplace.ts
-- Buy authorization tokens on the marketplace - scripts/buy-from-marketplace.ts
-
-## Wait... still have something to say in person (CEO of SonarMeta)
+## Wait... still have something to say in person
 
 I've been involved in Web3 for over a year, and I’m here not because of its bull market, not for trading tokens, and I didn't even know what a token was when I first here. I got into it because I felt the call of blockchain itself to my business model. Later, I learned that everything here revolves around "whether it can be hyped." An application can surely be deployed on the blockchain, but something that can't be hyped is not used by the natives, and cryptography discourages non-natives, ultimately creating the strange logic of us having no market.
 
