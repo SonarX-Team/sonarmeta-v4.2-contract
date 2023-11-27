@@ -3,23 +3,22 @@ pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./Creation.sol";
+import "./CreationCollection.sol";
 import "./utils/ReentrancyGuard.sol";
 
 /// @title SonarMeta IP DAO contract
-/// @author SonarX (Hangzhou) Technology Co., Ltd.
 contract IpDao is ERC721Holder, Ownable, ReentrancyGuard {
     struct Submission {
         address submitter;
         uint256 weight; // Percentage weight%
     }
 
-    Creation private creation;
+    CreationCollection private creation;
 
     mapping(address => bool) private members;
     uint256 private memberCount;
 
-    mapping(uint256 => Submission) private submissions;
+    mapping(bytes32 => Submission) private submissions;
 
     //////////////////////////////////////////////////////////
     ///////////////////////   Events   ///////////////////////
@@ -33,7 +32,7 @@ contract IpDao is ERC721Holder, Ownable, ReentrancyGuard {
 
     /// @notice Emitted when a creation token is submitted
     event CreationSubmitted(
-        uint256 indexed tokenId,
+        bytes32 indexed tokenId,
         address indexed submitter,
         uint256 weight
     );
@@ -62,12 +61,12 @@ contract IpDao is ERC721Holder, Ownable, ReentrancyGuard {
     ///////////////////   Main Functions   ///////////////////
     //////////////////////////////////////////////////////////
 
-    constructor(address _initialOwner, address _creationImpAddr)
+    constructor(address _initialOwner, address payable _creationImpAddr)
         Ownable(_initialOwner)
     {
         initializeReentrancyGuard();
 
-        creation = Creation(_creationImpAddr);
+        creation = CreationCollection(_creationImpAddr);
 
         members[_initialOwner] = true;
         memberCount++;
@@ -107,7 +106,7 @@ contract IpDao is ERC721Holder, Ownable, ReentrancyGuard {
     /// @param _weight The weight that set to this submission
     function submitCreation(
         address _to,
-        uint256 _creationId,
+        bytes32 _creationId,
         uint256 _weight
     ) external onlyMember(msg.sender) nonReentrant {
         // TODO：需要一个tba实现检查给定TBA的owner是不是这个IP DAO
@@ -123,7 +122,7 @@ contract IpDao is ERC721Holder, Ownable, ReentrancyGuard {
         submission.submitter = msg.sender;
         submission.weight = _weight;
 
-        creation.safeTransferFrom(msg.sender, _to, _creationId);
+        creation.transfer(msg.sender, _to, _creationId, false, "");
 
         emit CreationSubmitted(_creationId, msg.sender, _weight);
     }
@@ -143,7 +142,7 @@ contract IpDao is ERC721Holder, Ownable, ReentrancyGuard {
         //     "Withdraw can only be done with a TBA owned by this IP DAO."
         // );
 
-        uint256[] memory tokensOwnedByTba = creation.getTokenIds(_tbaAddr);
+        bytes32[] memory tokensOwnedByTba = creation.tokenIdsOf(_tbaAddr);
         uint256 totalWeight;
 
         for (uint256 i = 0; i < tokensOwnedByTba.length; i++) {

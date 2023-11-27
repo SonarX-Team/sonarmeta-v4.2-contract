@@ -2,19 +2,18 @@
 pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./Storage.sol";
-import "./Authorization.sol";
+import "./AuthorizationCollection.sol";
+import "./AuthorizationToken.sol";
 import "./utils/ReentrancyGuard.sol";
 
-error PriceNotMet(uint256 tokenId, uint256 price);
+error PriceNotMet(bytes32 tokenId, uint256 price);
 error InsufficientTokenAmount();
 error NotApprovedForMarketplace();
 error PriceMustBeAboveZero();
 error NoProceeds();
 
 /// @title SonarMeta marketplace contract for `authorization tokens`
-/// @author SonarX (Hangzhou) Technology Co., Ltd.
-contract Marketplace is Ownable, Storage, ReentrancyGuard {
+contract Marketplace is Ownable, ReentrancyGuard {
     /// @notice Listing information struct
     struct Listing {
         uint256 amount;
@@ -22,9 +21,11 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
     }
 
     // Track all listings, tokenID => (seller => Listing)
-    mapping(uint256 => mapping(address => Listing)) private listings;
+    mapping(bytes32 => mapping(address => Listing)) private listings;
     // Pull over push pattern, seller => proceeds
     mapping(address => uint256) private proceeds;
+
+    AuthorizationCollection private authorization;
 
     //////////////////////////////////////////////////////////
     ///////////////////////   Events   ///////////////////////
@@ -32,18 +33,18 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
 
     /// @notice Emitted when a item is listed or updated
     event ItemListed(
-        uint256 indexed tokenId,
+        bytes32 indexed tokenId,
         address indexed seller,
         uint256 amount,
         uint256 basePrice
     );
 
     /// @notice Emitted when a item is canceled
-    event ItemCanceled(address indexed seller, uint256 indexed tokenId);
+    event ItemCanceled(address indexed seller, bytes32 indexed tokenId);
 
     /// @notice Emitted when a item is bought
     event ItemBought(
-        uint256 indexed tokenId,
+        bytes32 indexed tokenId,
         address indexed buyer,
         uint256 amount,
         uint256 price
@@ -53,10 +54,10 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
     ///////////////////   Main Functions   ///////////////////
     //////////////////////////////////////////////////////////
 
-    constructor(address _authorizationImpAddr) Ownable(msg.sender) {
+    constructor(address payable _authorizationImpAddr) Ownable(msg.sender) {
         initializeReentrancyGuard();
 
-        authorization = Authorization(_authorizationImpAddr);
+        authorization = AuthorizationCollection(_authorizationImpAddr);
     }
 
     /// @notice Method for listing authorization token
@@ -64,16 +65,23 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
     /// @param _amount Amount of the authorization token
     /// @param _basePrice Base price for each authorization token
     function listItem(
-        uint256 _tokenId,
+        bytes32 _tokenId,
         uint256 _amount,
         uint256 _basePrice
     ) external {
-        if (!authorization.isApprovedForAll(msg.sender, address(this)))
+        if (!authorization.isOperatorFor(address(this), _tokenId))
             revert NotApprovedForMarketplace();
 
         if (_basePrice <= 0) revert PriceMustBeAboveZero();
 
-        uint256 value = authorization.balanceOf(msg.sender, _tokenId);
+        // Decode authorizationTokenId to get the tokenId, which is an address
+        // And get the implementation of the authorization token
+        AuthorizationToken authorizationToken = AuthorizationToken(
+            abi.decode(abi.encodePacked(_tokenId), (address))
+        );
+
+        // LSP-7 balanceOf to figure out the value this sender holds
+        uint256 value = authorizationToken.balanceOf(msg.sender);
         if (value < _amount) revert InsufficientTokenAmount();
 
         listings[_tokenId][msg.sender] = Listing(_amount, _basePrice);
@@ -83,7 +91,7 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
 
     /// @notice Method for cancelling listing
     /// @param _tokenId Token TokenID of the authorization token
-    function cancelListing(uint256 _tokenId) external {
+    function cancelListing(bytes32 _tokenId) external {
         delete listings[_tokenId][msg.sender];
 
         emit ItemCanceled(msg.sender, _tokenId);
@@ -97,7 +105,7 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
     /// @param _seller The seller of the authorization token
     /// @param _amount Amount that the buyer wants
     function buyItem(
-        uint256 _tokenId,
+        bytes32 _tokenId,
         address _seller,
         uint256 _amount
     ) external payable nonReentrant {
@@ -116,13 +124,16 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
             emit ItemCanceled(_seller, _tokenId);
         }
 
-        authorization.safeTransferFrom(
-            _seller,
-            msg.sender,
-            _tokenId,
-            _amount,
-            ""
+        // Decode authorizationTokenId to get the tokenId, which is an address
+        // And get the implementation of the authorization token
+        AuthorizationToken authorizationToken = AuthorizationToken(
+            abi.decode(abi.encodePacked(_tokenId), (address))
         );
+
+        // LSP-8 transfer
+        authorization.transfer(_seller, msg.sender, _tokenId, false, "");
+        // LSP-7 transfer
+        authorizationToken.transfer(_seller, msg.sender, _amount, false, "");
 
         emit ItemBought(_tokenId, msg.sender, _amount, price);
     }
@@ -137,7 +148,7 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
 
         (bool success, ) = payable(msg.sender).call{value: proceed}("");
 
-        require(success, "Transfer failed");
+        require(success, "Withdraw failed!");
     }
 
     //////////////////////////////////////////////////////////
@@ -145,7 +156,7 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
     //////////////////////////////////////////////////////////
 
     /// @notice Get a listing by tokenID and its seller
-    function getListing(uint256 _tokenId, address _seller)
+    function getListing(bytes32 _tokenId, address _seller)
         external
         view
         returns (Listing memory)

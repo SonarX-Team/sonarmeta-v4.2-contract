@@ -3,20 +3,20 @@ pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./Storage.sol";
-import "./Creation.sol";
-import "./Authorization.sol";
+import "./CreationCollection.sol";
+import "./AuthorizationCollection.sol";
+import "./AuthorizationToken.sol";
 import "./IpDao.sol";
 import "./utils/ReentrancyGuard.sol";
-import "./utils/Counters.sol";
+import "./utils/Governance.sol";
 
 /// @title SonarMeta main contract
 /// @author SonarX (Hangzhou) Technology Co., Ltd.
-contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
-    /// @notice TBA information struct
+contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
+    /// @notice Token-bound account information struct
     struct Tba {
         bool isSigned; // If this TBA is signed to use SonarMeta
-        uint256 tokenId; // The tokenID of the corresponding creation
+        bytes32 tokenId; // The tokenID of the corresponding creation
         mapping(address => bool) holders; // All holder TBAs of this TBA
         uint256 holderCount; // The amount of holder TBAs of this TBA
         uint256 nodeValue; // The value of this TBA
@@ -27,7 +27,10 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
     // Track all IP DAOs deployed by SonarMeta
     mapping(address => bool) private ipDaos;
 
-    address private creationImpAddr;
+    Governance private governance;
+    CreationCollection private creation;
+    AuthorizationCollection private authorization;
+    address payable private creationImpAddr;
 
     //////////////////////////////////////////////////////////
     ///////////////////////   Events   ///////////////////////
@@ -38,14 +41,14 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
 
     /// @notice Emitted when authorized
     event Authorized(
-        uint256 indexed tokenId,
+        bytes32 indexed tokenId,
         address indexed from,
         address indexed to
     );
 
     /// @notice Emitted when contribution increased
     event Contributed(
-        uint256 indexed tokenId,
+        bytes32 indexed tokenId,
         uint256 amount,
         address indexed from,
         address indexed to
@@ -66,7 +69,7 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
         _;
     }
 
-    modifier onlyIssuer(address _tbaAddr, uint256 _tokenId) {
+    modifier onlyIssuer(address _tbaAddr, bytes32 _tokenId) {
         require(
             tbas[_tbaAddr].tokenId == _tokenId,
             "Authorization token must be issued by its corresponding creation's TBA."
@@ -94,14 +97,15 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
     ///////////////////   Main Functions   ///////////////////
     //////////////////////////////////////////////////////////
 
-    constructor(address _creationImpAddr, address _authorizationImpAddr)
-        Ownable(msg.sender)
-    {
+    constructor(
+        address payable _creationImpAddr,
+        address payable _authorizationImpAddr
+    ) Ownable(msg.sender) {
         initializeReentrancyGuard();
 
         governance = Governance(owner());
-        creation = Creation(_creationImpAddr);
-        authorization = Authorization(_authorizationImpAddr);
+        creation = CreationCollection(_creationImpAddr);
+        authorization = AuthorizationCollection(_authorizationImpAddr);
 
         creationImpAddr = _creationImpAddr;
     }
@@ -109,8 +113,13 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
     /// @notice Mint a new creation/component token
     /// @param _to The account the owner of the new creation/component token
     /// @return The tokenID of the new creation/component token
-    function mintCreation(address _to) external nonReentrant returns (uint256) {
-        uint256 tokenId = creation.mint(_to);
+    function mintCreation(address _to) external nonReentrant returns (bytes32) {
+        // Since tokenId type is number in creation collection
+        // Use something like a increasing counter to mint
+        uint256 currentCount = creation.totalSupply() + 1;
+        bytes32 tokenId = bytes32(abi.encode(currentCount));
+
+        creation.mint(_to, tokenId, false, "");
 
         return tokenId;
     }
@@ -118,7 +127,7 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
     /// @notice A TBA sign to use SonarMeta
     /// @param _tbaAddr The TBA address wants to sign
     /// @param _tokenId The creation tokenID corresponding to this TBA
-    function signToUse(address _tbaAddr, uint256 _tokenId)
+    function signToUse(address _tbaAddr, bytes32 _tokenId)
         external
         nonReentrant
     {
@@ -133,7 +142,7 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
     /// @notice Mint a corresponding authorization token to activate authorization functionality
     /// @param _tbaAddr The TBA address wants to activate authorization
     /// @param _tokenId The creation tokenID corresponding to this TBA
-    function activateAuthorization(address _tbaAddr, uint256 _tokenId)
+    function activateAuthorization(address _tbaAddr, bytes32 _tokenId)
         external
         onlySignedTba(_tbaAddr)
         onlyIssuer(_tbaAddr, _tokenId)
@@ -150,7 +159,7 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
     function authorize(
         address _from,
         address _to,
-        uint256 _tokenId
+        bytes32 _tokenId
     )
         external
         onlySignedTba(_from)
@@ -164,6 +173,7 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
 
         authorization.increase(_to, _tokenId, 1);
         // With 10 bonus to SonarMeta
+        // This is our TODO business model that any `authorize` can be our profitable point
         authorization.increase(address(this), _tokenId, 10);
 
         tba.holders[_to] = true;
@@ -183,7 +193,7 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
     function contribute(
         address _from,
         address _to,
-        uint256 _tokenId,
+        bytes32 _tokenId,
         uint256 _amount
     )
         external
@@ -198,11 +208,19 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
 
         authorization.increase(_to, _tokenId, _amount);
         // With 10 bonus to SonarMeta
+        // This is our TODO business model that any `contribute` can be our profitable point
         authorization.increase(address(this), _tokenId, 10);
 
         emit Contributed(_tokenId, _amount, _from, _to);
 
-        return authorization.balanceOf(_to, _tokenId);
+        // Decode authorizationTokenId to get the tokenId, which is an address
+        // And get the implementation of the authorization token
+        AuthorizationToken authorizationToken = AuthorizationToken(
+            abi.decode(abi.encodePacked(_tokenId), (address))
+        );
+
+        // LSP-7 balanceOf to figure out the value that _to holds
+        return authorizationToken.balanceOf(_to);
     }
 
     /// @notice Deploy a new IP DAO
@@ -217,24 +235,50 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
         return ipDaoAddr;
     }
 
-    /// @notice Method for withdrawing authorization tokens to SonarMeta owner
+    /// @notice Method for withdrawing authorization tokens to SonarMeta's team
+    /// This is our TODO business model that we can withdraw authorization tokens from here
+    /// And list them on Marketplace to be one of a seller in competition
     function withdraw() external onlyOwner nonReentrant {
-        uint256 totalSupply = creation.totalSupply();
+        bytes32[] memory authorizationIds = authorization.tokenIdsOf(
+            address(this)
+        );
+        uint256[] memory amounts = new uint256[](authorizationIds.length);
+        address[] memory froms = new address[](authorizationIds.length);
+        address[] memory tos = new address[](authorizationIds.length);
+        bool[] memory forces = new bool[](authorizationIds.length);
+        bytes[] memory datas = new bytes[](authorizationIds.length);
 
-        uint256[] memory ids = new uint256[](totalSupply);
-        uint256[] memory amounts = new uint256[](totalSupply);
+        for (uint256 i = 0; i < authorizationIds.length; i++) {
+            // Decode authorizationTokenId to get the tokenId, which is an address
+            // And get the implementation of the authorization token
+            AuthorizationToken authorizationToken = AuthorizationToken(
+                abi.decode(abi.encodePacked(authorizationIds[i]), (address))
+            );
 
-        for (uint256 i = 1; i <= totalSupply; i++) {
-            ids[i] = i;
-            amounts[i] = authorization.balanceOf(address(this), i);
+            // LSP-7 transfer
+            authorizationToken.transfer(
+                address(this),
+                msg.sender,
+                authorizationToken.balanceOf(address(this)),
+                false,
+                ""
+            );
+
+            // LSP-7 balanceOf to figure out value that SonarMeta contract holds
+            amounts[i] = authorizationToken.balanceOf(address(this));
+            froms[i] = address(this);
+            tos[i] = msg.sender;
+            forces[i] = false;
+            datas[i] = "";
         }
 
-        authorization.safeBatchTransferFrom(
-            address(this),
-            msg.sender,
-            ids,
-            amounts,
-            ""
+        // LSP-8 transfer batch
+        authorization.transferBatch(
+            froms,
+            tos,
+            authorizationIds,
+            forces,
+            datas
         );
     }
 
