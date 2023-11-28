@@ -6,6 +6,15 @@
 - Demo Next.js repo: [https://github.com/SonarX-Team/sonarmeta-v4-next](https://github.com/SonarX-Team/sonarmeta-v4-next).
 - Demo video: [https://youtu.be/eT6uTgPD-d8](https://youtu.be/eT6uTgPD-d8)
 
+## Deployed addresses on LUKSO testnet
+
+- SonarMeta main contract: 0x8083954F57e1f13edFEa9907971208F523Ec79e6
+- Creation collection contract: 0x755B6217f468DE6F8bd78Fd06eF34e7131D891B5
+- Authorization collection contract: 0x5119629BB6364f377572880750DDd747d34Eac73
+- Marketplace contract: 0xA2aaf36403dD4C97749Fb6CA88e7d44f1E205f3c
+- ERC-6551 registry contract: 0xB6caCDa7c2Ce382D5Cc8d70F7C7f225aD3dEa642
+- ERC-6551 account contract: 0x801b41437D7dbe15b8107bd5c75DA2A65Ed3fBE7
+
 ## SonarMeta Overview
 
 ### Motivation
@@ -52,6 +61,12 @@ Since we believe that technical adaptation is ultimately a matter of time. A cre
 - Give bonus to a holder node (mint authorization NFT tokens) - ./scripts/give-bonus.ts
 - List authorization tokens to the marketplace - ./scripts/list-to-marketplace.ts
 - Buy authorization tokens on the marketplace - ./scripts/buy-from-marketplace.ts
+
+## A possible early application scenario:
+
+Emoji packs (i.e. stickers, memes) — Spread IP in the most lightweight and efficient way! Static images, when transformed into a sticker, can express various emotions, making them more appealing to a wider audience. They can be shared effortlessly on any social media platform and spread virally in a p2p manner, without relying on centralized B2C recommendation algorithms, aligning with our expectations. Creating a set of 20-30 stickers with a reference image, can have a production cycle of less than a month. It is much simpler compared to videos and games, making it easy to attract early creators. An emoji pack can serve as an NFT collection, which we are already familiar with.
+
+Each creation node on SonarMeta is considered a basic IP image. An original can inspire a creator to mint a derivative node and deploy a separate NFT collection to mint stickers. The sticker NFTs are treated as components, added to the derivative node's token-bound account, applying for original authorization for the entire node. Now, the emoji pack can be distributed on any social media platform, such as Discord, Telegram, WeChat, allowing enthusiasts to freely share it. Due to the similarity between the derivative and the original, they can pass traffic value mutually, and the creator can consistently profit through reward coins. This innovative NFT gameplay continuously introduces NFTs into the real world, increasing the user base of Web3. Creators no longer need to rely on the limited transaction volume and low prices on platforms like Opensea to make a profit.
 
 ## Wait... still have something to say in person
 
