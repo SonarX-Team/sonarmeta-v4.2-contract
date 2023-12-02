@@ -15,33 +15,46 @@
 - ERC-6551 registry contract: 0xB6caCDa7c2Ce382D5Cc8d70F7C7f225aD3dEa642
 - ERC-6551 account contract: 0x801b41437D7dbe15b8107bd5c75DA2A65Ed3fBE7
 
-## SonarMeta Overview
+## Problem & Motivation
 
-### Motivation
+SonarMeta has always been interested in intellectual property (IP). Over the past decade, we have witnessed the glory of many Web2 content platforms. However, these platforms often manipulate VIEWs with algorithms for their own benefit, leading to the concentration of exposure opportunities, brand agency, and social resources on the top-tier IPs. This results in many promising IPs not fully accessing resources and prematurely fading away. Creators' earnings are often unfair, and infringement issues are becoming increasingly severe. Despite these challenges, the global IP industry is expected to have a market value of trillions of dollars.
 
-SonarMeta has always been interested in IP. Over the past decade, we have witnessed the glory of many Web2 content platforms. However, for their own interests, platform operators manipulate traffic precisely through algorithms, resulting in the concentration of most exposure opportunities, brand agencies, and social resources on the top popular IPs. Even if it's unfair, the estimated global market value of the IP industry is in trillions of dollars. This leads us to firmly believe that unlocking the potential of IPs that have prematurely faltered due to traffic issues will undoubtedly unleash a powerful force, much like detonating a nuclear weapon.
+It's crucial to recognize that with the increasingly challenging employment landscape, growing unemployment rates, and the widespread use of AIGC tools, emerging IPs continue to emerge rapidly, and predicting their upper limit in quantity is nearly impossible. While top-tier IPs hold immense value, their quantity is very limited, and the potential of tail-end IPs should far surpass that of the top-tier IPs. On the internet, we often see small IPs unexpectedly gaining popularity in a short period due to triggering recommendation algorithms. However, not every IP is so fortunate, with many facing significant resource shortages, hindering them from unlocking their potential. Therefore, it is worth considering using blockchain as a tool to decentralize VIEWs distribution. If we can unleash the potential of IPs that prematurely faded away, the overall market value will far exceed the current estimates.
 
-### Core mechanism
+Therefore, SonarMeta aims to build a decentralized network centered around IP, ensuring that the value of IP can be captured and circulated. VIEWs distribution will be determined by the entire creator ecosystem rather than being constrained by Web2 content platforms. Copyright will be fully protected, forming a network of mutually beneficial relationships among IPs. Everyone becomes a shareholder in the IPs they contribute to, enjoying the deserved benefits.
 
-Let's say, if increasing traffic can enhance the value of an IP, then a straightforward way to acquire traffic is by authorizing others to create derivatives. Authorization, is not only about granting legitimacy but also serves as a tool for trading traffic. High-value IPs can sell authorizations at a premium to unleash traffic, while low-value IPs may sell them at lower or even for free to attract traffic. Therefore, we tokenize authorizations, and as they circulate, the derivatives created by holders contribute traffic to enhance the value of the IP. When an IP becomes more valuable, the token's price for authorizations will increase. This incentivizes the entire creator ecosystem to assist IPs facing early resource challenges in unlocking their potential.
+## Core Mechanism
 
-### Getting started
+The key to enhancing the value of an IP lies in increasing its VIEWs. One straightforward method to acquire VIEWs is by authorizing others to create derivative works. Authorization is no longer merely a grant of legitimacy to derivatives; it is also a tool for trading VIEWs. High-value IPs can sell authorizations at a premium to unleash VIEWs, while low-value IPs can sell authorizations at a lower cost or even for free to attract VIEWs. In other words, as an IP becomes more valuable, its authorizations become more expensive, and the price and circulation of authorizations can reflect the IP's value.
 
-If you are a new user of SonarMeta, the first step is to create a node. This involves a creation NFT and a token-bound account that exercises on-chain sovereignty for it. Deploying this TBA allows users to send transactions on behalf of it, and this is a global operation. Signing is equivalent to registering the TBA on SonarMeta, making it easier for us to track holder data and node value. Activating means the node can act as an issuer for authorizations. Each step requires gas, so users can choose to what extent they want to engage.
+Therefore, we tokenize authorizations, and holders contribute and provide VIEWs to the IP by creating derivatives (or any means, such as posting on Twitter), enhancing its value. Consequently, the value of their authorization tokens increases. This incentivizes the entire creator ecosystem to assist IPs facing early resource challenges in unlocking their potential.
 
-Suppose another user sees and really likes your creation one day, and decides to create a derivative for you. That guy can deploy and sign this node, then apply for authorization on your creation page. At this point, you can visit the studio to review and authorize the application, making the derivative a holder of your creation. Then it can receive your airdrop, and when the value of your node increases, it can sell the tokens at a better price, creating a mutually beneficial situation. Now, anyone who likes, wants to contribute, seeks exposure, or has confidence in your creation can buy your tokens and contribute to making higher prices.
+![whiteboard_exported_image.png](https://cdn.dorahacks.io/static/files/18c1fe2034425037b33fa2246458eff6.png)
 
-### Further more with co-creation
+## Key Features
 
-TBA can also serve as a repository for co-creation. If a creation involves a team rather than a solo effort, such as a painting by a group, different layers can be minted as component NFTs and submitted to the TBA of the co-creation. The contribution of each member can be tracked by a separate contract.
+- **Tokenization of Authorization**: The market value and circulation of authorization tokens, serving as tools to safeguard IP copyrights and acquire VIEWs, reflect the value of the IP.
+- **Growth Loop**: When authorization exchanges result in the flow of VIEWs to an IP, it signifies an increase in the IP's value. In turn, this enhances the value of its authorization (i.e., the capacity to exchange for VIEWs), creating a growth loop for IP value.
+- **Incentive Model**: As the value of authorization tokens increases with the original IP's value, holders contributing efforts are essentially investing in themselves. This aligns with an incentive-compatible stakeholder capitalism model, initiating a cycle of node growth and addressing the core issue.
+- **Value Network**: When derivatives also have their derivatives, an IP value network emerges, with creations as nodes and authorizations as edges.
+- **Network Effects**: As each node is supported by actual VIEWs and has a growth cycle, we can infer that the entire network's value is real and growing. It exhibits clear network effects barriers, rather than heading towards a Ponzi scheme.
+- **Universal Shareholders**: With the foundation of incentive compatibility established between originals and derivatives, blockchain is used to accurately trace each creator's contribution, ensuring that all network participants receive their deserved benefits.
 
-### Give birth to the value network
+## Technical Architecture
 
-In the end, when derivatives also activate authorization functionalities, and derivatives of derivatives start to emerge, a value network is formed. Nodes that join earlier will receive more profits sooner, and there are more interesting tokenomic features waiting to be explored on this network.
+SonarMeta utilizes the concept of a token-bound account (TBA) mentioned in ERC-6551 to assist NFT creations in declaring their on-chain authorization entity status. Authorization tokens are issued and received by TBAs, designating the creation issuing the authorization as Original/Issuer and the creation receiving the authorization as Derivative/Holder.
 
-### More information about SonarMeta
+![whiteboard_exported_image.png](https://cdn.dorahacks.io/static/files/18c1fe3dbfeba84121d07164602b59a6.png)
 
-Please check the doc [Introducing SonarMeta](https://sonarx666.feishu.cn/docx/XyLndXhftoXz1GxkCYAcOIdrn1U?from=from_copylink).
+If a creation is a co-creation, its components (such as different layers of a painting or different tracks of a song) can all be minted as NFTs and submitted to the creation's Token-Bound Account (TBA). The creator's team can deploy an IP DAO contract to manage and index the contribution level of each contributor.
+
+![whiteboard_exported_image.png](https://cdn.dorahacks.io/static/files/18c1fe432a1e7f79a0c627f494fa502a.png)
+
+## A possible early application scenario
+
+Emoji packs (i.e. stickers, memes) — Spread IP in the most lightweight and efficient way! Static images, when transformed into a sticker, can express various emotions, making them more appealing to a wider audience. They can be shared effortlessly on any social media platform and spread virally in a p2p manner, without relying on centralized B2C recommendation algorithms, aligning with our expectations. Creating a set of 20-30 stickers with a reference image, can have a production cycle of less than a month. It is much simpler compared to videos and games, making it easy to attract early creators. An emoji pack can serve as an NFT collection, which we are already familiar with.
+
+Each creation node on SonarMeta is considered a basic IP image. An original can inspire a creator to mint a derivative node and deploy a separate NFT collection to mint stickers. The sticker NFTs are treated as components, added to the derivative node's token-bound account, applying for original authorization for the entire node. Now, the emoji pack can be distributed on any social media platform, such as Discord, Telegram, WeChat, allowing enthusiasts to freely share it. Due to the similarity between the derivative and the original, they can pass VIEWs value mutually, and the creator can consistently profit through reward coins. This innovative NFT gameplay continuously can introduce NFTs into the real world and increase the user base of Web3. Creators no longer need to rely on the limited transaction volume and low prices on platforms like Opensea to make a profit.
 
 ## To the Judges of LUKSO BuildUP #2
 
@@ -62,11 +75,11 @@ Since we believe that technical adaptation is ultimately a matter of time. A cre
 - List authorization tokens to the marketplace - ./scripts/list-to-marketplace.ts
 - Buy authorization tokens on the marketplace - ./scripts/buy-from-marketplace.ts
 
-## A possible early application scenario:
+## Why blockchain?
 
-Emoji packs (i.e. stickers, memes) — Spread IP in the most lightweight and efficient way! Static images, when transformed into a sticker, can express various emotions, making them more appealing to a wider audience. They can be shared effortlessly on any social media platform and spread virally in a p2p manner, without relying on centralized B2C recommendation algorithms, aligning with our expectations. Creating a set of 20-30 stickers with a reference image, can have a production cycle of less than a month. It is much simpler compared to videos and games, making it easy to attract early creators. An emoji pack can serve as an NFT collection, which we are already familiar with.
+Blockchain tokenization offers the ability to concretize and capture abstract value, and provides everyone with a fair investment opportunity, allowing for transparent asset tracking and accurate distribution of returns. Investment is not limited to currency; it can be any abstract entity, such as VIEWs of a tweet, video editing skills, team collaboration, and more. Leveraging these capabilities, we can closely integrate with the current creative economy, bringing people together, ensuring unimpeded value flow, and providing each person with their deserved returns. Ultimately, it unleashes a significant amount of untapped potential.
 
-Each creation node on SonarMeta is considered a basic IP image. An original can inspire a creator to mint a derivative node and deploy a separate NFT collection to mint stickers. The sticker NFTs are treated as components, added to the derivative node's token-bound account, applying for original authorization for the entire node. Now, the emoji pack can be distributed on any social media platform, such as Discord, Telegram, WeChat, allowing enthusiasts to freely share it. Due to the similarity between the derivative and the original, they can pass traffic value mutually, and the creator can consistently profit through reward coins. This innovative NFT gameplay continuously introduces NFTs into the real world, increasing the user base of Web3. Creators no longer need to rely on the limited transaction volume and low prices on platforms like Opensea to make a profit.
+The immense value nurtured by the IP culture industry comes from a vast community of creators. We do not wish for these values to be monopolized by centralized platforms, subject to arbitrary exploitation, as relying on any centralized platform to be objective, fair, and efficient is an uncertain prospect. Existing platforms follow hierarchical structures, making it challenging for lower-tier creators to uphold their rights. Even if they manage to do so, the speed and cost are not optimistic. However, blockchain serves not only as a means of authentication but also as a highly concurrent, objective, transparent, and efficient method. It can automatically and rapidly address the rights and profit issues of a large number of creators without overlooking small IPs.
 
 ## Wait... still have something to say in person
 
@@ -80,4 +93,4 @@ Decentralization doesn't mean no center; it means everyone is a center to make i
 
 Seeing what Lukso has done makes me see the self-reform of Natives, and Web3 has hope. There are big players who can break free from the cryptocurrency mindset to reform. This is the most inspiring thing I have seen in over a year, rather than some token flipping 20 times. So, I am confident that the future vision of SonarMeta can definitely be realized in Web3, and the ultimate vision of Web3 can also be realized, and its value is far beyond what AI can match now (although AI has sparked a creative boom, the entire lifecycle of creation can be hosted on the blockchain). But it certainly cannot be achieved without each of us centers thinking about doing something more creative rather than native.
 
-May we always feel honored to wear the cloak of Web3 for ourselves！
+May we always feel honored to wear the cloak of Web3 for ourselves!
