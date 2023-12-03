@@ -14,12 +14,12 @@ contract IpDao is ERC721Holder, Ownable, ReentrancyGuard {
         uint256 weight; // Percentage weight%
     }
 
-    Creation private creation;
+    Creation private s_creation;
 
-    mapping(address => bool) private members;
-    uint256 private memberCount;
+    mapping(address => bool) private s_members;
+    uint256 private s_memberCount;
 
-    mapping(uint256 => Submission) private submissions;
+    mapping(uint256 => Submission) private s_submissions;
 
     //////////////////////////////////////////////////////////
     ///////////////////////   Events   ///////////////////////
@@ -44,7 +44,7 @@ contract IpDao is ERC721Holder, Ownable, ReentrancyGuard {
 
     modifier onlyNotMember(address _memberAddr) {
         require(
-            !members[_memberAddr],
+            !s_members[_memberAddr],
             "The given address has been already a member. in this IP DAO."
         );
         _;
@@ -52,7 +52,7 @@ contract IpDao is ERC721Holder, Ownable, ReentrancyGuard {
 
     modifier onlyMember(address _memberAddr) {
         require(
-            members[_memberAddr],
+            s_members[_memberAddr],
             "The given address is not a member in this IP DAO."
         );
         _;
@@ -67,10 +67,10 @@ contract IpDao is ERC721Holder, Ownable, ReentrancyGuard {
     {
         initializeReentrancyGuard();
 
-        creation = Creation(_creationImpAddr);
+        s_creation = Creation(_creationImpAddr);
 
-        members[_initialOwner] = true;
-        memberCount++;
+        s_members[_initialOwner] = true;
+        s_memberCount++;
     }
 
     /// @notice Add a member to this IP DAO by its owner
@@ -81,8 +81,8 @@ contract IpDao is ERC721Holder, Ownable, ReentrancyGuard {
         onlyNotMember(_memberAddr)
         nonReentrant
     {
-        members[_memberAddr] = true;
-        memberCount++;
+        s_members[_memberAddr] = true;
+        s_memberCount++;
 
         emit MemberAdded(_memberAddr);
     }
@@ -95,8 +95,8 @@ contract IpDao is ERC721Holder, Ownable, ReentrancyGuard {
         onlyMember(_memberAddr)
         nonReentrant
     {
-        delete members[_memberAddr];
-        memberCount--;
+        delete s_members[_memberAddr];
+        s_memberCount--;
 
         emit MemberRemoved(_memberAddr);
     }
@@ -118,12 +118,12 @@ contract IpDao is ERC721Holder, Ownable, ReentrancyGuard {
         //     "Submission can only be done with a TBA owned by this IP DAO."
         // );
 
-        Submission storage submission = submissions[_creationId];
+        Submission storage submission = s_submissions[_creationId];
 
         submission.submitter = msg.sender;
         submission.weight = _weight;
 
-        creation.safeTransferFrom(msg.sender, _to, _creationId);
+        s_creation.safeTransferFrom(msg.sender, _to, _creationId);
 
         emit CreationSubmitted(_creationId, msg.sender, _weight);
     }
@@ -143,11 +143,11 @@ contract IpDao is ERC721Holder, Ownable, ReentrancyGuard {
         //     "Withdraw can only be done with a TBA owned by this IP DAO."
         // );
 
-        uint256[] memory tokensOwnedByTba = creation.getTokenIds(_tbaAddr);
+        uint256[] memory tokensOwnedByTba = s_creation.getTokenIds(_tbaAddr);
         uint256 totalWeight;
 
         for (uint256 i = 0; i < tokensOwnedByTba.length; i++) {
-            Submission memory submission = submissions[tokensOwnedByTba[i]];
+            Submission memory submission = s_submissions[tokensOwnedByTba[i]];
 
             if (submission.submitter == msg.sender)
                 totalWeight += submission.weight;
@@ -169,11 +169,11 @@ contract IpDao is ERC721Holder, Ownable, ReentrancyGuard {
 
     /// @notice Check if the given address is a member of this IP DAO
     function isMember(address _memberAddr) external view returns (bool) {
-        return members[_memberAddr];
+        return s_members[_memberAddr];
     }
 
     /// @notice Get the total account of members of this IP DAO
     function getMemberCount() external view returns (uint256) {
-        return memberCount;
+        return s_memberCount;
     }
 }

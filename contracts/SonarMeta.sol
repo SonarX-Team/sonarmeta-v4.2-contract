@@ -3,16 +3,16 @@ pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./Storage.sol";
 import "./Creation.sol";
 import "./Authorization.sol";
 import "./IpDao.sol";
+import "./utils/Governance.sol";
 import "./utils/ReentrancyGuard.sol";
 import "./utils/Counters.sol";
 
 /// @title SonarMeta main contract
 /// @author SonarX (Hangzhou) Technology Co., Ltd.
-contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
+contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
     /// @notice TBA information struct
     struct Tba {
         bool isSigned; // If this TBA is signed to use SonarMeta
@@ -23,11 +23,15 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
     }
 
     // Track TBA infos, TBA address => TBA info
-    mapping(address => Tba) private tbas;
+    mapping(address => Tba) private s_tbas;
     // Track all IP DAOs deployed by SonarMeta
-    mapping(address => bool) private ipDaos;
+    mapping(address => bool) private s_ipDaos;
 
-    address private creationImpAddr;
+    address private s_creationImpAddr;
+
+    Governance private s_governance;
+    Creation private s_creation;
+    Authorization private s_authorization;
 
     //////////////////////////////////////////////////////////
     ///////////////////////   Events   ///////////////////////
@@ -60,7 +64,7 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
 
     modifier onlySignedTba(address _tbaAddr) {
         require(
-            tbas[_tbaAddr].isSigned,
+            s_tbas[_tbaAddr].isSigned,
             "Address provided must be a signed TBA towards SonarMeta."
         );
         _;
@@ -68,7 +72,7 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
 
     modifier onlyIssuer(address _tbaAddr, uint256 _tokenId) {
         require(
-            tbas[_tbaAddr].tokenId == _tokenId,
+            s_tbas[_tbaAddr].tokenId == _tokenId,
             "Authorization token must be issued by its corresponding creation's TBA."
         );
         _;
@@ -76,7 +80,7 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
 
     modifier onlyHolder(address _issuer, address _holder) {
         require(
-            tbas[_issuer].holders[_holder],
+            s_tbas[_issuer].holders[_holder],
             "This TBA has not been authorized (a holder) yet."
         );
         _;
@@ -84,7 +88,7 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
 
     modifier onlyNotHolder(address _issuer, address _holder) {
         require(
-            !tbas[_issuer].holders[_holder],
+            !s_tbas[_issuer].holders[_holder],
             "This TBA has been already (a holder) authorized."
         );
         _;
@@ -99,18 +103,18 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
     {
         initializeReentrancyGuard();
 
-        governance = Governance(owner());
-        creation = Creation(_creationImpAddr);
-        authorization = Authorization(_authorizationImpAddr);
+        s_governance = Governance(owner());
+        s_creation = Creation(_creationImpAddr);
+        s_authorization = Authorization(_authorizationImpAddr);
 
-        creationImpAddr = _creationImpAddr;
+        s_creationImpAddr = _creationImpAddr;
     }
 
     /// @notice Mint a new creation/component token
     /// @param _to The account the owner of the new creation/component token
     /// @return The tokenID of the new creation/component token
     function mintCreation(address _to) external nonReentrant returns (uint256) {
-        uint256 tokenId = creation.mint(_to);
+        uint256 tokenId = s_creation.mint(_to);
 
         return tokenId;
     }
@@ -122,10 +126,10 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
         external
         nonReentrant
     {
-        Tba storage tba = tbas[_tbaAddr];
+        Tba storage tba = s_tbas[_tbaAddr];
         tba.isSigned = true;
 
-        tbas[_tbaAddr].tokenId = _tokenId;
+        s_tbas[_tbaAddr].tokenId = _tokenId;
 
         emit TbaSigned(_tbaAddr);
     }
@@ -139,7 +143,7 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
         onlyIssuer(_tbaAddr, _tokenId)
         nonReentrant
     {
-        authorization.claimNew(_tbaAddr, _tokenId);
+        s_authorization.claimNew(_tbaAddr, _tokenId);
     }
 
     /// @notice Authorize from a TBA to another TBA (increase 1 contribution)
@@ -160,11 +164,11 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
         nonReentrant
         returns (uint256)
     {
-        Tba storage tba = tbas[_from];
+        Tba storage tba = s_tbas[_from];
 
-        authorization.increase(_to, _tokenId, 1);
+        s_authorization.increase(_to, _tokenId, 1);
         // With 10 bonus to SonarMeta
-        authorization.increase(address(this), _tokenId, 10);
+        s_authorization.increase(address(this), _tokenId, 10);
 
         tba.holders[_to] = true;
         tba.holderCount++;
@@ -196,21 +200,21 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
     {
         require(_amount > 0, "Contribution amount must be above 0.");
 
-        authorization.increase(_to, _tokenId, _amount);
+        s_authorization.increase(_to, _tokenId, _amount);
         // With 10 bonus to SonarMeta
-        authorization.increase(address(this), _tokenId, 10);
+        s_authorization.increase(address(this), _tokenId, 10);
 
         emit Contributed(_tokenId, _amount, _from, _to);
 
-        return authorization.balanceOf(_to, _tokenId);
+        return s_authorization.balanceOf(_to, _tokenId);
     }
 
     /// @notice Deploy a new IP DAO
     function deployIpDao() external nonReentrant returns (address) {
-        IpDao ipDao = new IpDao(msg.sender, creationImpAddr);
+        IpDao ipDao = new IpDao(msg.sender, s_creationImpAddr);
         address ipDaoAddr = address(ipDao);
 
-        ipDaos[ipDaoAddr] = true;
+        s_ipDaos[ipDaoAddr] = true;
 
         emit IpDaoDeployed(ipDaoAddr, msg.sender);
 
@@ -219,17 +223,17 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
 
     /// @notice Method for withdrawing authorization tokens to SonarMeta owner
     function withdraw() external onlyOwner nonReentrant {
-        uint256 totalSupply = creation.totalSupply();
+        uint256 totalSupply = s_creation.totalSupply();
 
         uint256[] memory ids = new uint256[](totalSupply);
         uint256[] memory amounts = new uint256[](totalSupply);
 
         for (uint256 i = 1; i <= totalSupply; i++) {
             ids[i] = i;
-            amounts[i] = authorization.balanceOf(address(this), i);
+            amounts[i] = s_authorization.balanceOf(address(this), i);
         }
 
-        authorization.safeBatchTransferFrom(
+        s_authorization.safeBatchTransferFrom(
             address(this),
             msg.sender,
             ids,
@@ -244,7 +248,7 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
 
     /// @notice Check if a TBA is signed
     function isTbaSigned(address _tbaAddr) external view returns (bool) {
-        return tbas[_tbaAddr].isSigned;
+        return s_tbas[_tbaAddr].isSigned;
     }
 
     /// @notice Check if a TBA is another TBA's holder
@@ -255,7 +259,7 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
         onlySignedTba(_tbaAddr)
         returns (bool)
     {
-        return tbas[_tbaAddr].holders[_holderAddr];
+        return s_tbas[_tbaAddr].holders[_holderAddr];
     }
 
     /// @notice Get the total amount of holders of a TBA
@@ -265,7 +269,7 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
         onlySignedTba(_tbaAddr)
         returns (uint256)
     {
-        return tbas[_tbaAddr].holderCount;
+        return s_tbas[_tbaAddr].holderCount;
     }
 
     /// @notice Get the nodeValue of a TBA
@@ -275,11 +279,11 @@ contract SonarMeta is ERC1155Holder, Ownable, Storage, ReentrancyGuard {
         onlySignedTba(_tbaAddr)
         returns (uint256)
     {
-        return tbas[_tbaAddr].nodeValue;
+        return s_tbas[_tbaAddr].nodeValue;
     }
 
     /// @notice Check if an IP DAO is tracked
     function isIpDaoTracked(address _ipDaoAddr) external view returns (bool) {
-        return ipDaos[_ipDaoAddr];
+        return s_ipDaos[_ipDaoAddr];
     }
 }

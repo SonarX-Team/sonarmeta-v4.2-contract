@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./Storage.sol";
 import "./Authorization.sol";
 import "./utils/ReentrancyGuard.sol";
 
@@ -14,7 +13,7 @@ error NoProceeds();
 
 /// @title SonarMeta marketplace contract for `authorization tokens`
 /// @author SonarX (Hangzhou) Technology Co., Ltd.
-contract Marketplace is Ownable, Storage, ReentrancyGuard {
+contract Marketplace is Ownable, ReentrancyGuard {
     /// @notice Listing information struct
     struct Listing {
         uint256 amount;
@@ -22,9 +21,11 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
     }
 
     // Track all listings, tokenID => (seller => Listing)
-    mapping(uint256 => mapping(address => Listing)) private listings;
+    mapping(uint256 => mapping(address => Listing)) private s_listings;
     // Pull over push pattern, seller => proceeds
-    mapping(address => uint256) private proceeds;
+    mapping(address => uint256) private s_proceeds;
+
+    Authorization private s_authorization;
 
     //////////////////////////////////////////////////////////
     ///////////////////////   Events   ///////////////////////
@@ -56,7 +57,7 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
     constructor(address _authorizationImpAddr) Ownable(msg.sender) {
         initializeReentrancyGuard();
 
-        authorization = Authorization(_authorizationImpAddr);
+        s_authorization = Authorization(_authorizationImpAddr);
     }
 
     /// @notice Method for listing authorization token
@@ -68,15 +69,15 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
         uint256 _amount,
         uint256 _basePrice
     ) external {
-        if (!authorization.isApprovedForAll(msg.sender, address(this)))
+        if (!s_authorization.isApprovedForAll(msg.sender, address(this)))
             revert NotApprovedForMarketplace();
 
         if (_basePrice <= 0) revert PriceMustBeAboveZero();
 
-        uint256 value = authorization.balanceOf(msg.sender, _tokenId);
+        uint256 value = s_authorization.balanceOf(msg.sender, _tokenId);
         if (value < _amount) revert InsufficientTokenAmount();
 
-        listings[_tokenId][msg.sender] = Listing(_amount, _basePrice);
+        s_listings[_tokenId][msg.sender] = Listing(_amount, _basePrice);
 
         emit ItemListed(_tokenId, msg.sender, _amount, _basePrice);
     }
@@ -84,7 +85,7 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
     /// @notice Method for cancelling listing
     /// @param _tokenId Token TokenID of the authorization token
     function cancelListing(uint256 _tokenId) external {
-        delete listings[_tokenId][msg.sender];
+        delete s_listings[_tokenId][msg.sender];
 
         emit ItemCanceled(msg.sender, _tokenId);
     }
@@ -101,22 +102,22 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
         address _seller,
         uint256 _amount
     ) external payable nonReentrant {
-        Listing storage listedItem = listings[_tokenId][_seller];
+        Listing storage listedItem = s_listings[_tokenId][_seller];
         uint256 price = listedItem.basePrice * _amount;
 
         if (_amount > listedItem.amount) revert InsufficientTokenAmount();
         if (msg.value < price) revert PriceNotMet(_tokenId, price);
 
-        proceeds[_seller] += msg.value;
+        s_proceeds[_seller] += msg.value;
         listedItem.amount -= _amount;
 
         if (listedItem.amount == 0) {
-            delete listings[_tokenId][_seller];
+            delete s_listings[_tokenId][_seller];
 
             emit ItemCanceled(_seller, _tokenId);
         }
 
-        authorization.safeTransferFrom(
+        s_authorization.safeTransferFrom(
             _seller,
             msg.sender,
             _tokenId,
@@ -129,11 +130,11 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
 
     /// @notice Method for withdrawing proceeds from sales
     function withdrawProceeds() external nonReentrant {
-        uint256 proceed = proceeds[msg.sender];
+        uint256 proceed = s_proceeds[msg.sender];
 
         if (proceed <= 0) revert NoProceeds();
 
-        proceeds[msg.sender] = 0;
+        s_proceeds[msg.sender] = 0;
 
         (bool success, ) = payable(msg.sender).call{value: proceed}("");
 
@@ -150,11 +151,11 @@ contract Marketplace is Ownable, Storage, ReentrancyGuard {
         view
         returns (Listing memory)
     {
-        return listings[_tokenId][_seller];
+        return s_listings[_tokenId][_seller];
     }
 
     /// @notice Get proceeds of a seller
     function getProceeds(address _seller) external view returns (uint256) {
-        return proceeds[_seller];
+        return s_proceeds[_seller];
     }
 }
