@@ -7,29 +7,16 @@ const config: HardhatUserConfig = {
   solidity: "0.8.20",
   networks: {
     hardhat: {},
-    sepolia: {
-      url: "https://sepolia.infura.io/v3/2b7300b9852a435d86a5dc856e462c0e",
-      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-      gasPrice: 35000000000,
-    },
-    goerli: {
-      url: "https://goerli.infura.io/v3/2b7300b9852a435d86a5dc856e462c0e",
-      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-    },
     polygonMumbai: {
       url: "https://polygon-mumbai.infura.io/v3/2b7300b9852a435d86a5dc856e462c0e",
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
+    avalancheFuji: {
+      url: "https://avalanche-fuji.infura.io/v3/2b7300b9852a435d86a5dc856e462c0e",
+      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    },
     lineaGoerli: {
       url: "https://linea-goerli.infura.io/v3/2b7300b9852a435d86a5dc856e462c0e",
-      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-    },
-    arbitrumGoerli: {
-      url: "https://arbitrum-goerli.infura.io/v3/2b7300b9852a435d86a5dc856e462c0e",
-      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-    },
-    scrollSepolia: {
-      url: "https://sepolia-rpc.scroll.io/" || "",
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
   },

@@ -3,7 +3,10 @@ import fs from "fs";
 import path from "path";
 
 async function main() {
-  const NETWORK = "polygonMumbai"; // Set before deployment
+  // Set before deployment
+  const NETWORK = "polygonMumbai";
+  const routerAddr: `0x${string}` = "0x70499c328e1e2a3c41108bd3730f6670a44595d1";
+  const linkAddr: `0x${string}` = "0x326c977e6efc84e512bb9c30f76e30c160ed06fb";
 
   // Contracts are deployed using the first signer/account by default
   const [owner] = await hre.viem.getWalletClients();
@@ -25,6 +28,9 @@ async function main() {
   console.log("Deploying SonarMeta main contract...");
   const main = await hre.viem.deployContract("SonarMeta", [creation.address, authorization.address]);
 
+  console.log("Deploying CCIP message sender contract...");
+  const sender = await hre.viem.deployContract("MessageSender", [routerAddr, linkAddr]);
+
   // Transfer Ownership
   await creation.write.transferOwnership([main.address]);
   await authorization.write.transferOwnership([main.address]);
@@ -38,12 +44,13 @@ async function main() {
     creation: creation.address,
     authorization: authorization.address,
     marketplace: marketplace.address,
+    sender: sender.address,
   };
 
   console.log(addresses);
 
   // Save the addresses to a file
-  const folderPath = "address";
+  const folderPath = "address/main";
 
   if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath);
 

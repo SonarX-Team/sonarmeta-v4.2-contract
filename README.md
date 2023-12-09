@@ -6,9 +6,13 @@
 - Demo Next.js repo: [https://github.com/SonarX-Team/sonarmeta-v4-next](https://github.com/SonarX-Team/sonarmeta-v4-next).
 - Demo video: [https://youtu.be/eT6uTgPD-d8](https://youtu.be/eT6uTgPD-d8)
 
+## Vision
+
+SonarMeta aims to create a metaverse entirely driven by the creator community, enabling creators to freely buy/sell VIEWs using tokenized authorizations without being constrained by the algorithms of Web2 centralized platforms. By authorizing derivatives of their works, creators build shareholder relationships with other creators, fostering P2P incentives and win-win scenarios, ultimately unlocking the full potential of each IP.
+
 ## Problem & Motivation
 
-SonarMeta has always been interested in intellectual property (IP). Over the past decade, we have witnessed the glory of many Web2 content platforms. However, these platforms often manipulate VIEWs with algorithms for their own benefit, leading to the concentration of exposure opportunities, brand agency, and social resources on the top-tier IPs. This results in many promising IPs not fully accessing resources and prematurely fading away. Creators' earnings are often unfair, and infringement issues are becoming increasingly severe. Despite these challenges, the global IP industry is expected to have a market value of trillions of dollars.
+SonarMeta has always been interested in intellectual property (IP). Over the past decade, we have witnessed the glory of many Web2 content platforms. However, these platforms often manipulate VIEWs with algorithms for their own benefit, leading to the concentration of exposure opportunities, brand agencies, and social resources on the top-tier IPs. This results in many promising IPs not fully accessing resources and prematurely fading away. Creators' earnings are often unfair, and infringement issues are becoming increasingly severe. Despite these challenges, the global IP industry is expected to have a market value of trillions of dollars.
 
 It's crucial to recognize that with the increasingly challenging employment landscape, growing unemployment rates, and the widespread use of AIGC tools, emerging IPs continue to emerge rapidly, and predicting their upper limit in quantity is nearly impossible. While top-tier IPs hold immense value, their quantity is very limited, and the potential of tail-end IPs should far surpass that of the top-tier IPs. On the internet, we often see small IPs unexpectedly gaining popularity in a short period due to triggering recommendation algorithms. However, not every IP is so fortunate, with many facing significant resource shortages, hindering them from unlocking their potential. Therefore, it is worth considering using blockchain as a tool to decentralize VIEWs distribution. If we can unleash the potential of IPs that prematurely faded away, the overall market value will far exceed the current estimates.
 

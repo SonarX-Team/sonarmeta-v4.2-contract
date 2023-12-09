@@ -2,8 +2,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-toolbox-viem/network-helpe
 import { TokenboundClient } from "@tokenbound/sdk";
 import { expect } from "chai";
 import hre from "hardhat";
-import { getAddress } from "viem";
-import { goerli, hardhat } from "viem/chains";
+import { hardhat } from "viem/chains";
 
 describe("SonarMeta", function () {
   // We define a fixture to reuse the same setup in every test.
