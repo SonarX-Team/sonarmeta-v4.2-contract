@@ -7,6 +7,7 @@ async function main() {
   const NETWORK = "polygonMumbai";
   const routerAddr: `0x${string}` = "0x70499c328e1e2a3c41108bd3730f6670a44595d1";
   const linkAddr: `0x${string}` = "0x326c977e6efc84e512bb9c30f76e30c160ed06fb";
+  const sourceChainSelector = 14767482510784806043n;
 
   // Contracts are deployed using the first signer/account by default
   const [owner] = await hre.viem.getWalletClients();
@@ -28,8 +29,11 @@ async function main() {
   console.log("Deploying SonarMeta main contract...");
   const main = await hre.viem.deployContract("SonarMeta", [creation.address, authorization.address]);
 
-  console.log("Deploying CCIP message sender contract...");
-  const sender = await hre.viem.deployContract("MessageSender", [routerAddr, linkAddr]);
+  console.log("Deploying CCIP message receiver contract...");
+  const receiver = await hre.viem.deployContract("MessageReceiver", [routerAddr, linkAddr]);
+
+  // Set CCIP receiver allow list
+  receiver.write.allowlistSourceChain([sourceChainSelector, true]);
 
   // Transfer Ownership
   await creation.write.transferOwnership([main.address]);
@@ -44,7 +48,7 @@ async function main() {
     creation: creation.address,
     authorization: authorization.address,
     marketplace: marketplace.address,
-    sender: sender.address,
+    receiver: receiver.address,
   };
 
   console.log(addresses);

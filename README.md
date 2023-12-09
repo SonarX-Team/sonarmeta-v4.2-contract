@@ -6,6 +6,21 @@
 - Demo Next.js repo: [https://github.com/SonarX-Team/sonarmeta-v4-next](https://github.com/SonarX-Team/sonarmeta-v4-next).
 - Demo video: [https://youtu.be/eT6uTgPD-d8](https://youtu.be/eT6uTgPD-d8)
 
+## Address of deployment
+
+### Polygon Mumbai
+
+- SonarMeta main contract: 0xd7c68ffbcdae5ddc171af7d5b707f1f521253ae8
+- Governance contract: 0x810c3e508b93949fcec4388e90dc0e8c49661792
+- Creation (network node) collection: 0xbee00961f5e0a8284a8ceaf8e3e96deca83e0d49
+- Authorization (network edge) collection: 0x3074a2e5bcd7e090ac88a20033af9f17efeec934
+- Marketplace contract: 0xbe506ab0e83a09e288283b6249c537d3de2a16a6
+- Chainlink CCIP receiver contract: 0x2e19d7793268a013fe5d83f3b24e0676ad2c67ed
+
+### Avalanche Fuji
+
+- Chainlink CCIP sender contract: 0x9817a7faaeab2ff87d270a6f192cb49bb8d81e85
+
 ## Vision
 
 SonarMeta aims to create a metaverse entirely driven by the creator community, enabling creators to freely buy/sell VIEWs using tokenized authorizations without being constrained by the algorithms of Web2 centralized platforms. By authorizing derivatives of their works, creators build shareholder relationships with other creators, fostering P2P incentives and win-win scenarios, ultimately unlocking the full potential of each IP.
@@ -56,3 +71,7 @@ Each creation node on SonarMeta is considered a basic IP image. An original can 
 Blockchain tokenization offers the ability to concretize and capture abstract value, and provides everyone with a fair investment opportunity, allowing for transparent asset tracking and accurate distribution of returns. Investment is not limited to currency; it can be any abstract entity, such as VIEWs of a tweet, video editing skills, team collaboration, and more. Leveraging these capabilities, we can closely integrate with the current creative economy, bringing people together, ensuring unimpeded value flow, and providing each person with their deserved returns. Ultimately, it unleashes a significant amount of untapped potential.
 
 The immense value nurtured by the IP culture industry comes from a vast community of creators. We do not wish for these values to be monopolized by centralized platforms, subject to arbitrary exploitation, as relying on any centralized platform to be objective, fair, and efficient is an uncertain prospect. Existing platforms follow hierarchical structures, making it challenging for lower-tier creators to uphold their rights. Even if they manage to do so, the speed and cost are not optimistic. However, blockchain serves not only as a means of authentication but also as a highly concurrent, objective, transparent, and efficient method. It can automatically and rapidly address the rights and profit issues of a large number of creators without overlooking small IPs.
+
+## Next step? v4.3
+
+We are preparing the tokenomics of authorization tokens for the upcoming v4.3 release. Please hang tight to see our latest updates!

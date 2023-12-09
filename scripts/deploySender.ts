@@ -6,24 +6,28 @@ async function main() {
   // Set before deployment
   const NETWORK = "avalancheFuji";
   const routerAddr: `0x${string}` = "0x554472a2720e5e7d5d3c817529aba05eed5f82d8";
-  const sonarMetaAddr: `0x${string}` = "0xf464b8279c1d5d100e565164518fe636d9c0d442";
+  const sonarMetaAddr: `0x${string}` = "0xd7c68ffbcdae5ddc171af7d5b707f1f521253ae8"; // SET
+  const destinationChainSelector = 12532609583862916517n;
 
   console.log("Deploying...");
 
-  console.log("Deploying CCIP message receiver contract...");
-  const receiver = await hre.viem.deployContract("MessageReceiver", [routerAddr, sonarMetaAddr]);
+  console.log("Deploying CCIP message sender contract...");
+  const sender = await hre.viem.deployContract("MessageSender", [routerAddr, sonarMetaAddr]);
+
+  // Set CCIP sender allow list
+  sender.write.allowlistDestinationChain([destinationChainSelector, true]);
 
   console.log("Deployed!");
 
   // Save the addresses
   const addresses = {
-    receiver: receiver.address,
+    sender: sender.address,
   };
 
   console.log(addresses);
 
   // Save the addresses to a file
-  const folderPath = "address/receiver";
+  const folderPath = "address/sender";
 
   if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath);
 

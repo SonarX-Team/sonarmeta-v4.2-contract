@@ -23,9 +23,6 @@ contract MessageReceiver is CCIPReceiver, OwnerIsCreator {
     // Mapping to keep track of allowlisted source chains.
     mapping(uint64 => bool) public allowlistedSourceChains;
 
-    // Mapping to keep track of allowlisted senders.
-    mapping(address => bool) public allowlistedSenders;
-
     bytes32 private s_lastReceivedMessageId; // Store the last received messageId.
     string private s_lastReceivedText; // Store the last received text.
 
@@ -33,11 +30,9 @@ contract MessageReceiver is CCIPReceiver, OwnerIsCreator {
 
     /// @dev Modifier that checks if the chain with the given sourceChainSelector is allowlisted and if the sender is allowlisted.
     /// @param _sourceChainSelector The selector of the destination chain.
-    /// @param _sender The address of the sender.
-    modifier onlyAllowlisted(uint64 _sourceChainSelector, address _sender) {
+    modifier onlyAllowlistedSourceChain(uint64 _sourceChainSelector) {
         if (!allowlistedSourceChains[_sourceChainSelector])
             revert SourceChainNotAllowlisted(_sourceChainSelector);
-        if (!allowlistedSenders[_sender]) revert SenderNotAllowlisted(_sender);
         _;
     }
 
@@ -59,21 +54,13 @@ contract MessageReceiver is CCIPReceiver, OwnerIsCreator {
         allowlistedSourceChains[_sourceChainSelector] = allowed;
     }
 
-    /// @dev Updates the allowlist status of a sender for transactions.
-    function allowlistSender(address _sender, bool allowed) external onlyOwner {
-        allowlistedSenders[_sender] = allowed;
-    }
-
     /// Handle a received message
     function _ccipReceive(
         Client.Any2EVMMessage memory _any2EvmMessage
     )
         internal
         override
-        onlyAllowlisted(
-            _any2EvmMessage.sourceChainSelector,
-            abi.decode(_any2EvmMessage.sender, (address))
-        ) // Make sure source chain and sender are allowlisted
+        onlyAllowlistedSourceChain(_any2EvmMessage.sourceChainSelector)
     {
         // Call function defined in SonarMeta contract
         (bool success, ) = address(s_sonarMeta).call(_any2EvmMessage.data);

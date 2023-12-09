@@ -1,8 +1,8 @@
 {
-    "main": "0xf464b8279c1d5d100e565164518fe636d9c0d442",
-    "governance": "0x9dd1887ea109d3f9c8cd542449af71817135e98d",
-    "creation": "0x498d5f1f68eee1bb6b95e61bcf26ac681f7263c8",
-    "authorization": "0x86cc93b1a73fc8a62767d6efdfbbbfb1e4d7cd0c",
-    "marketplace": "0x9092fdc4bf0aeda715659f8031c5cf566010d81b",
-    "sender": "0x5327fe667daf08edba2d64bb00454a3efc4987e0"
+    "main": "0xd7c68ffbcdae5ddc171af7d5b707f1f521253ae8",
+    "governance": "0x810c3e508b93949fcec4388e90dc0e8c49661792",
+    "creation": "0xbee00961f5e0a8284a8ceaf8e3e96deca83e0d49",
+    "authorization": "0x3074a2e5bcd7e090ac88a20033af9f17efeec934",
+    "marketplace": "0xbe506ab0e83a09e288283b6249c537d3de2a16a6",
+    "receiver": "0x2e19d7793268a013fe5d83f3b24e0676ad2c67ed"
 }
