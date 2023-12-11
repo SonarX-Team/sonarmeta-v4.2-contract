@@ -2,14 +2,9 @@
 pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./SonarMeta.sol";
 import "./Authorization.sol";
 import "./utils/ReentrancyGuard.sol";
-
-error PriceNotMet(uint256 tokenId, uint256 price);
-error InsufficientTokenAmount();
-error NotApprovedForMarketplace();
-error PriceMustBeAboveZero();
-error NoProceeds();
 
 /// @title SonarMeta marketplace contract for `authorization tokens`
 /// @author SonarX (Hangzhou) Technology Co., Ltd.
@@ -51,6 +46,17 @@ contract Marketplace is Ownable, ReentrancyGuard {
     );
 
     //////////////////////////////////////////////////////////
+    ///////////////////////   Errors   ///////////////////////
+    //////////////////////////////////////////////////////////
+
+    error IsNotHolder(uint256 tokenId, address derivative);
+    error PriceNotMet(uint256 tokenId, uint256 price);
+    error InsufficientTokenAmount();
+    error NotApprovedForMarketplace();
+    error PriceMustBeAboveZero();
+    error NoProceeds();
+
+    //////////////////////////////////////////////////////////
     ///////////////////   Main Functions   ///////////////////
     //////////////////////////////////////////////////////////
 
@@ -64,15 +70,20 @@ contract Marketplace is Ownable, ReentrancyGuard {
     /// @param _tokenId TokenID of the authorization token
     /// @param _amount Amount of the authorization token
     /// @param _basePrice Base price for each authorization token
+    /// @param _sonarmeta Address of SonarMeta main contract
     function listItem(
         uint256 _tokenId,
         uint256 _amount,
-        uint256 _basePrice
+        uint256 _basePrice,
+        address _sonarmeta
     ) external {
         if (!s_authorization.isApprovedForAll(msg.sender, address(this)))
             revert NotApprovedForMarketplace();
 
         if (_basePrice <= 0) revert PriceMustBeAboveZero();
+
+        SonarMeta sonarmeta = SonarMeta(_sonarmeta);
+        if (!sonarmeta.isHolderByTokenId(_tokenId, msg.sender)) revert IsNotHolder(_tokenId, msg.sender);
 
         uint256 value = s_authorization.balanceOf(msg.sender, _tokenId);
         if (value < _amount) revert InsufficientTokenAmount();
@@ -90,14 +101,14 @@ contract Marketplace is Ownable, ReentrancyGuard {
         emit ItemCanceled(msg.sender, _tokenId);
     }
 
-    /// @notice Method for buying listing
+    /// @notice Method for buying listing for a node
     /// @notice The owner of an NFT could unapprove the marketplace,
     /// which would cause this function to fail
     /// Ideally you'd also have a `createOffer` functionality.
     /// @param _tokenId TokenID of the authorization token
     /// @param _seller The seller of the authorization token
     /// @param _amount Amount that the buyer wants
-    function buyItem(
+    function buyItemFor(
         uint256 _tokenId,
         address _seller,
         uint256 _amount
@@ -146,11 +157,10 @@ contract Marketplace is Ownable, ReentrancyGuard {
     //////////////////////////////////////////////////////////
 
     /// @notice Get a listing by tokenID and its seller
-    function getListing(uint256 _tokenId, address _seller)
-        external
-        view
-        returns (Listing memory)
-    {
+    function getListing(
+        uint256 _tokenId,
+        address _seller
+    ) external view returns (Listing memory) {
         return s_listings[_tokenId][_seller];
     }
 

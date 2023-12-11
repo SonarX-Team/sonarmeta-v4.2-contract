@@ -10,23 +10,50 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 /// @notice ERC-1155: authorization tokenID => ( creation tbaAddr => contribution amount )
 /// One authorization tokenID only represents for one Creation tokenID (tokenIDs are the same)
 contract Authorization is ERC1155, Ownable, ERC1155Supply {
-    constructor(address _initialOwner)
+    string private _name;
+    string private _symbol;
+
+    constructor(
+        string memory name_,
+        string memory symbol_,
+        address _initialOwner
+    )
         ERC1155("https://en.sonarmeta.com/api/metadata/authorization/{id}")
         Ownable(_initialOwner)
-    {}
+    {
+        _name = name_;
+        _symbol = symbol_;
+    }
+
+    function name() public view returns (string memory) {
+        return _name;
+    }
+
+    function symbol() public view returns (string memory) {
+        return _symbol;
+    }
 
     function setURI(string memory _newuri) public onlyOwner {
         _setURI(_newuri);
     }
 
-    function claimNew(address _to, uint256 _tokenId) public onlyOwner {
-        require(_to != address(0), "Destination address can't be zero.");
+    /// @notice Claim authorization token with the corresponding tokenID and mint it up to the maximum limit.
+    /// @param _issuer The issuer token-bound account address
+    /// @param _tokenId The corresponding tokenID
+    /// @param _maxSupply The maximum limit of this authorization token, e.g. 10,000,000
+    function initialClaim(
+        address _issuer,
+        uint256 _tokenId,
+        uint256 _maxSupply
+    ) public onlyOwner {
+        require(_issuer != address(0), "Destination address can't be zero.");
         require(
             !exists(_tokenId),
             "The given tokenID has been already claimed."
         );
 
-        _mint(_to, _tokenId, 1, "");
+        _mint(_issuer, _tokenId, (_maxSupply * 19) / 20, ""); // 95%(9,500,000) for node itself.
+        _mint(owner(), _tokenId, (_maxSupply * 1) / 20, ""); // 5%(50,000) for SonarMeta protocol.
     }
 
     function increase(
@@ -40,12 +67,12 @@ contract Authorization is ERC1155, Ownable, ERC1155Supply {
         _mint(_to, _tokenId, _amount, "");
     }
 
-    // Get all token IDs held by a specific address
-    function getTokenIds(address _account)
-        public
-        view
-        returns (uint256[] memory)
-    {
+    /// @notice Get all token IDs held by a specific address
+    /// @param _account the address of the account
+    /// @return All tokenIDs that this account have
+    function getTokenIds(
+        address _account
+    ) public view returns (uint256[] memory) {
         uint256[] memory tokenIds;
         uint256 count;
 

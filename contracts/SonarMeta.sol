@@ -24,6 +24,8 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
 
     // Track TBA infos, TBA address => TBA info
     mapping(address => Tba) private s_tbas;
+    // Track locking tokens of each original tokenID - derivative pair
+    mapping(uint256 => mapping(address => uint256)) private s_lockings;
     // Track all IP DAOs deployed by SonarMeta
     mapping(address => bool) private s_ipDaos;
 
@@ -43,14 +45,6 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
     /// @notice Emitted when authorized
     event Authorized(
         uint256 indexed tokenId,
-        address indexed from,
-        address indexed to
-    );
-
-    /// @notice Emitted when contribution increased
-    event Contributed(
-        uint256 indexed tokenId,
-        uint256 amount,
         address indexed from,
         address indexed to
     );
@@ -98,9 +92,10 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
     ///////////////////   Main Functions   ///////////////////
     //////////////////////////////////////////////////////////
 
-    constructor(address _creationImpAddr, address _authorizationImpAddr)
-        Ownable(msg.sender)
-    {
+    constructor(
+        address _creationImpAddr,
+        address _authorizationImpAddr
+    ) Ownable(msg.sender) {
         initializeReentrancyGuard();
 
         s_governance = Governance(owner());
@@ -119,13 +114,13 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
         return tokenId;
     }
 
-    /// @notice A TBA sign to use SonarMeta
+    /// @notice A TBA signs to use SonarMeta
     /// @param _tbaAddr The TBA address wants to sign
     /// @param _tokenId The creation tokenID corresponding to this TBA
-    function signToUse(address _tbaAddr, uint256 _tokenId)
-        external
-        nonReentrant
-    {
+    function signNode(
+        address _tbaAddr,
+        uint256 _tokenId
+    ) external nonReentrant {
         Tba storage tba = s_tbas[_tbaAddr];
         tba.isSigned = true;
 
@@ -134,79 +129,84 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
         emit TbaSigned(_tbaAddr);
     }
 
-    /// @notice Mint a corresponding authorization token to activate authorization functionality
+    /// @notice Mint corresponding authorization tokens to make the node a issuer
     /// @param _tbaAddr The TBA address wants to activate authorization
     /// @param _tokenId The creation tokenID corresponding to this TBA
-    function activateAuthorization(address _tbaAddr, uint256 _tokenId)
+    /// @param _maxSupply The maximum limit of this authorization token, e.g. 10,000,000
+    function activateNode(
+        address _tbaAddr,
+        uint256 _tokenId,
+        uint256 _maxSupply
+    )
         external
         onlySignedTba(_tbaAddr)
         onlyIssuer(_tbaAddr, _tokenId)
         nonReentrant
     {
-        s_authorization.claimNew(_tbaAddr, _tokenId);
+        s_authorization.initialClaim(_tbaAddr, _tokenId, _maxSupply);
     }
 
-    /// @notice Authorize from a TBA to another TBA (increase 1 contribution)
-    /// @param _from The TBA which will publish the authorization token
-    /// @param _to The TBA which will receive the authorization token
+    /// @notice Accept a first-time application from a derivative node
+    /// @param _derivative The TBA which is going to apply
+    /// @param _tokenId The tokenID of the original node
+    /// @param _amount The amount the original node wants to give
+    function acceptApplication(
+        address _derivative,
+        uint256 _tokenId,
+        uint256 _amount
+    ) external onlySignedTba(_derivative) nonReentrant {
+        s_lockings[_tokenId][_derivative] = _amount;
+    }
+
+    /// @notice Authorize from an original to a derivative / Accept the derivative
+    /// @param _original The TBA which will issue the authorization token
+    /// @param _derivative The TBA which will receive the authorization token
     /// @param _tokenId The tokenID of the creation token
     /// @return The total holder amount of the creation
     function authorize(
-        address _from,
-        address _to,
+        address _original,
+        address _derivative,
         uint256 _tokenId
     )
         external
-        onlySignedTba(_from)
-        onlySignedTba(_to)
-        onlyIssuer(_from, _tokenId)
-        onlyNotHolder(_from, _to)
+        onlySignedTba(_original)
+        onlySignedTba(_derivative)
+        onlyIssuer(_original, _tokenId)
+        onlyNotHolder(_original, _derivative)
         nonReentrant
         returns (uint256)
     {
-        Tba storage tba = s_tbas[_from];
+        require(
+            s_authorization.isApprovedForAll(msg.sender, address(this)),
+            "Not approved for SonarMeta protocol."
+        );
 
-        s_authorization.increase(_to, _tokenId, 1);
-        // With 10 bonus to SonarMeta
-        s_authorization.increase(address(this), _tokenId, 10);
+        uint256 amount = s_lockings[_tokenId][_derivative];
+        require(amount > 0, "Cannot authorize a TBA without application.");
 
-        tba.holders[_to] = true;
+        Tba storage tba = s_tbas[_original];
+
+        s_authorization.safeTransferFrom(
+            _original,
+            _derivative,
+            _tokenId,
+            (amount * 19) / 20, // 95% for the derivative.
+            ""
+        );
+        s_authorization.safeTransferFrom(
+            _original,
+            address(this),
+            _tokenId,
+            (amount * 1) / 20, // 5% for SonarMeta protocol.
+            ""
+        );
+
+        tba.holders[_derivative] = true;
         tba.holderCount++;
 
-        emit Authorized(_tokenId, _from, _to);
+        emit Authorized(_tokenId, _original, _derivative);
 
         return tba.holderCount;
-    }
-
-    /// @notice Increase contribution from a TBA to another TBA
-    /// @param _from The TBA which will publish the authorization token
-    /// @param _to The TBA which will receive the authorization token
-    /// @param _tokenId The tokenID of the creation token
-    /// @param _amount The contribution value that the minter wants to give
-    /// @return The total contribution amount of _to
-    function contribute(
-        address _from,
-        address _to,
-        uint256 _tokenId,
-        uint256 _amount
-    )
-        external
-        onlySignedTba(_from)
-        onlySignedTba(_to)
-        onlyIssuer(_from, _tokenId)
-        onlyHolder(_from, _to)
-        nonReentrant
-        returns (uint256)
-    {
-        require(_amount > 0, "Contribution amount must be above 0.");
-
-        s_authorization.increase(_to, _tokenId, _amount);
-        // With 10 bonus to SonarMeta
-        s_authorization.increase(address(this), _tokenId, 10);
-
-        emit Contributed(_tokenId, _amount, _from, _to);
-
-        return s_authorization.balanceOf(_to, _tokenId);
     }
 
     /// @notice Deploy a new IP DAO
@@ -251,34 +251,40 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
         return s_tbas[_tbaAddr].isSigned;
     }
 
-    /// @notice Check if a TBA is another TBA's holder
-    function isHolder(address _holderAddr, address _tbaAddr)
+    /// @notice Check if a node is another node's derivative
+    function isHolderByAddress(
+        address _original,
+        address _derivative
+    )
         external
         view
-        onlySignedTba(_holderAddr)
-        onlySignedTba(_tbaAddr)
+        onlySignedTba(_original)
+        onlySignedTba(_derivative)
         returns (bool)
     {
-        return s_tbas[_tbaAddr].holders[_holderAddr];
+        return s_tbas[_original].holders[_derivative];
+    }
+
+    /// @notice Check if a node is another node's derivative
+    function isHolderByTokenId(
+        uint256 _tokenId,
+        address _derivative
+    ) external view onlySignedTba(_derivative) returns (bool) {
+        address original = s_creation.ownerOf(_tokenId);
+        return s_tbas[original].holders[_derivative];
     }
 
     /// @notice Get the total amount of holders of a TBA
-    function getHolderCount(address _tbaAddr)
-        external
-        view
-        onlySignedTba(_tbaAddr)
-        returns (uint256)
-    {
+    function getHolderCount(
+        address _tbaAddr
+    ) external view onlySignedTba(_tbaAddr) returns (uint256) {
         return s_tbas[_tbaAddr].holderCount;
     }
 
     /// @notice Get the nodeValue of a TBA
-    function getNodeValue(address _tbaAddr)
-        external
-        view
-        onlySignedTba(_tbaAddr)
-        returns (uint256)
-    {
+    function getNodeValue(
+        address _tbaAddr
+    ) external view onlySignedTba(_tbaAddr) returns (uint256) {
         return s_tbas[_tbaAddr].nodeValue;
     }
 
