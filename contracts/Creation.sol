@@ -13,7 +13,9 @@ contract Creation is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIdCounter;
 
-    constructor(address _initialOwner)
+    constructor(
+        address _initialOwner
+    )
         ERC721("SonarMeta Creation Network Node", "SMCNN")
         Ownable(_initialOwner)
     {}
@@ -22,21 +24,22 @@ contract Creation is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         return "https://en.sonarmeta.com/api/metadata/creation/";
     }
 
-    function mint(address to) public onlyOwner returns (uint256) {
-        require(to != address(0), "Destination address can't be zero.");
+    function mint(address _to) public onlyOwner returns (uint256) {
+        require(_to != address(0), "Destination address can't be zero.");
 
         _tokenIdCounter.increment();
         uint256 tokenId = _tokenIdCounter.current();
-        _safeMint(to, tokenId);
+        _safeMint(_to, tokenId);
 
         return tokenId;
     }
 
-    function getTokenIds(address _owner)
-        public
-        view
-        returns (uint256[] memory)
-    {
+    /// @notice Get all token IDs held by a specific address
+    /// @param _owner the address of the given owner
+    /// @return All tokenIDs that this owner have
+    function getTokenIds(
+        address _owner
+    ) public view returns (uint256[] memory) {
         uint256 balance = balanceOf(_owner);
         uint256[] memory tokenIds = new uint256[](balance);
 
@@ -56,23 +59,22 @@ contract Creation is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         return super._update(to, tokenId, auth);
     }
 
-    function _increaseBalance(address account, uint128 value)
-        internal
-        override(ERC721, ERC721Enumerable)
-    {
+    function _increaseBalance(
+        address account,
+        uint128 value
+    ) internal override(ERC721, ERC721Enumerable) {
         super._increaseBalance(account, value);
     }
 
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        override(ERC721, ERC721URIStorage)
-        returns (string memory)
-    {
+    function tokenURI(
+        uint256 tokenId
+    ) public view override(ERC721, ERC721URIStorage) returns (string memory) {
         return super.tokenURI(tokenId);
     }
 
-    function supportsInterface(bytes4 interfaceId)
+    function supportsInterface(
+        bytes4 interfaceId
+    )
         public
         view
         override(ERC721, ERC721Enumerable, ERC721URIStorage)

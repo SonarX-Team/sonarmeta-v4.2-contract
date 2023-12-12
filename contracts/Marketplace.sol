@@ -9,7 +9,6 @@ import "./utils/ReentrancyGuard.sol";
 /// @title SonarMeta marketplace contract for `authorization tokens`
 /// @author SonarX (Hangzhou) Technology Co., Ltd.
 contract Marketplace is Ownable, ReentrancyGuard {
-    /// @notice Listing information struct
     struct Listing {
         uint256 amount;
         uint256 basePrice; // In Wei
@@ -22,9 +21,7 @@ contract Marketplace is Ownable, ReentrancyGuard {
 
     Authorization private s_authorization;
 
-    //////////////////////////////////////////////////////////
     ///////////////////////   Events   ///////////////////////
-    //////////////////////////////////////////////////////////
 
     /// @notice Emitted when authorization tokens are listed or updated
     event AuthorizationListed(
@@ -45,9 +42,7 @@ contract Marketplace is Ownable, ReentrancyGuard {
         uint256 price
     );
 
-    //////////////////////////////////////////////////////////
     ///////////////////////   Errors   ///////////////////////
-    //////////////////////////////////////////////////////////
 
     error SellerIsNotDerivative(uint256 tokenId, address derivative);
     error PriceNotMet(uint256 tokenId, uint256 price);
@@ -56,9 +51,7 @@ contract Marketplace is Ownable, ReentrancyGuard {
     error PriceMustBeAboveZero();
     error NoProceeds();
 
-    //////////////////////////////////////////////////////////
     ///////////////////   Main Functions   ///////////////////
-    //////////////////////////////////////////////////////////
 
     constructor(address _authorizationImpAddr) Ownable(msg.sender) {
         initializeReentrancyGuard();
@@ -71,19 +64,19 @@ contract Marketplace is Ownable, ReentrancyGuard {
     /// @param _tokenId TokenID of the authorization token
     /// @param _amount Amount of the authorization token
     /// @param _basePrice Base price for each authorization token
-    /// @param _sonarmeta Address of SonarMeta main contract
+    /// @param _sonarmetaImpAddr Address of the SonarMeta main contract
     function listAuthorization(
         uint256 _tokenId,
         uint256 _amount,
         uint256 _basePrice,
-        address _sonarmeta
+        address _sonarmetaImpAddr
     ) external {
         if (!s_authorization.isApprovedForAll(msg.sender, address(this)))
             revert NotApprovedForMarketplace();
 
         if (_basePrice <= 0) revert PriceMustBeAboveZero();
 
-        SonarMeta sonarmeta = SonarMeta(_sonarmeta);
+        SonarMeta sonarmeta = SonarMeta(_sonarmetaImpAddr);
         if (!sonarmeta.isDerivativeByTokenId(_tokenId, msg.sender))
             revert SellerIsNotDerivative(_tokenId, msg.sender);
 
@@ -143,7 +136,7 @@ contract Marketplace is Ownable, ReentrancyGuard {
             _seller,
             address(this),
             _tokenId,
-            (_amount * 1) / 20, // 5% for SonarMeta protocol
+            (_amount * 1) / 20, // 5% for the SonarMeta protocol
             ""
         );
 
@@ -163,9 +156,7 @@ contract Marketplace is Ownable, ReentrancyGuard {
         require(success, "Transfer failed");
     }
 
-    //////////////////////////////////////////////////////////
     //////////////////   Getter Functions   //////////////////
-    //////////////////////////////////////////////////////////
 
     /// @notice Get a listing by tokenID and its seller
     function getListing(

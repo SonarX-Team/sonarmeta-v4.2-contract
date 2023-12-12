@@ -53,39 +53,28 @@ contract Authorization is ERC1155, Ownable, ERC1155Supply {
         );
 
         _mint(_issuer, _tokenId, (_maxSupply * 19) / 20, ""); // 95%(9,500,000) for node itself
-        _mint(owner(), _tokenId, (_maxSupply * 1) / 20, ""); // 5%(50,000) for SonarMeta protocol
-    }
-
-    function increase(
-        address _to,
-        uint256 _tokenId,
-        uint256 _amount
-    ) public onlyOwner {
-        require(_to != address(0), "Destination address can't be zero.");
-        require(exists(_tokenId), "The given tokenID doesn't exist.");
-
-        _mint(_to, _tokenId, _amount, "");
+        _mint(owner(), _tokenId, (_maxSupply * 1) / 20, ""); // 5%(50,000) for the SonarMeta protocol
     }
 
     /// @notice Get all token IDs held by a specific address
-    /// @param _account the address of the account
-    /// @return All tokenIDs that this account have
+    /// @param _owner the address of the given owner
+    /// @return All tokenIDs that this owner have
     function getTokenIds(
-        address _account
+        address _owner
     ) public view returns (uint256[] memory) {
         uint256[] memory tokenIds;
         uint256 count;
 
         // Count the number of token IDs held by the address
         for (uint256 i = 1; i <= totalSupply(); i++)
-            if (balanceOf(_account, i) > 0) count++;
+            if (balanceOf(_owner, i) > 0) count++;
 
         // Populate the array with token IDs
         tokenIds = new uint256[](count);
         count = 0;
 
         for (uint256 i = 1; i < totalSupply(); i++)
-            if (balanceOf(_account, i) > 0) {
+            if (balanceOf(_owner, i) > 0) {
                 tokenIds[count] = i;
                 count++;
             }

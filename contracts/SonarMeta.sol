@@ -5,17 +5,16 @@ import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Creation.sol";
 import "./Authorization.sol";
+import "./LockingVault.sol";
 import "./IpDao.sol";
 import "./utils/Governance.sol";
 import "./utils/ReentrancyGuard.sol";
-import "./utils/Counters.sol";
 
 /// @title SonarMeta main contract
 /// @author SonarX (Hangzhou) Technology Co., Ltd.
 contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
-    /// @notice Node information struct
     struct Node {
-        bool isSigned; // If this node is signed to use SonarMeta protocol
+        bool isSigned; // If this node is signed to use the SonarMeta protocol
         uint256 tokenId; // The tokenID of the corresponding creation
         mapping(address => bool) derivatives; // All derivatives of this node
         uint256 derivativeCount; // The amount of derivatives of this node
@@ -24,20 +23,17 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
 
     // Track node infos, token-bound account address => node info
     mapping(address => Node) private s_nodes;
-    // Track locking tokens of each original tokenID - derivative pair
-    mapping(uint256 => mapping(address => uint256)) private s_lockings;
-    // Track all IP DAOs deployed by SonarMeta
+    // Track all IP DAOs deployed by the SonarMeta protocol
     mapping(address => bool) private s_ipDaos;
 
     Governance private s_governance;
     Creation private s_creation;
     Authorization private s_authorization;
+    LockingVault private s_vault;
 
-    //////////////////////////////////////////////////////////
     ///////////////////////   Events   ///////////////////////
-    //////////////////////////////////////////////////////////
 
-    /// @notice Emitted when a node is signed to use SonarMeta
+    /// @notice Emitted when a node is signed to use the SonarMeta protocol
     event NodeSigned(address indexed nodeAddr);
 
     /// @notice Emitted when authorized
@@ -50,9 +46,7 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
     /// @notice Emitted when an IP DAO is deployed
     event IpDaoDeployed(address indexed ipDaoAddr, address indexed owner);
 
-    //////////////////////////////////////////////////////////
     ///////////////////////   Errors   ///////////////////////
-    //////////////////////////////////////////////////////////
 
     error NodeNotSigned(address nodeAddr);
     error AuthorizationMustBeIssuedByOriginal(
@@ -62,11 +56,8 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
     error NodeIsNotDerivative(address original, address derivative);
     error NodeIsDerivative(address original, address derivative);
     error NotApprovedForSonarMetaProtocol();
-    error AuthorizationMustBeIssuedWithApplication();
 
-    //////////////////////////////////////////////////////////
     /////////////////////   Modifiers   //////////////////////
-    //////////////////////////////////////////////////////////
 
     modifier onlySignedNode(address _nodeAddr) {
         if (!s_nodes[_nodeAddr].isSigned) revert NodeNotSigned(_nodeAddr);
@@ -91,19 +82,19 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
         _;
     }
 
-    //////////////////////////////////////////////////////////
     ///////////////////   Main Functions   ///////////////////
-    //////////////////////////////////////////////////////////
 
     constructor(
         address _creationImpAddr,
-        address _authorizationImpAddr
+        address _authorizationImpAddr,
+        address _lockingVaultImpAddr
     ) Ownable(msg.sender) {
         initializeReentrancyGuard();
 
         s_governance = Governance(owner());
         s_creation = Creation(_creationImpAddr);
         s_authorization = Authorization(_authorizationImpAddr);
+        s_vault = LockingVault(_lockingVaultImpAddr);
     }
 
     /// @notice Mint a new creation/component token
@@ -115,7 +106,7 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
         return tokenId;
     }
 
-    /// @notice A Node signs to use SonarMeta
+    /// @notice A Node signs to use the SonarMeta protocol
     /// @param _nodeAddr The token-bound account address of this node that wants to sign
     /// @param _tokenId The creation tokenID corresponding to this node
     function signNodeToUse(
@@ -148,15 +139,15 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
     }
 
     /// @notice Accept a first-time application from a derivative node
-    /// @param _derivative The node which is going to be applied
     /// @param _tokenId The tokenID of the original node
+    /// @param _derivative The node which is going to be applied
     /// @param _amount The amount the original node wants to give
     function acceptApplication(
-        address _derivative,
         uint256 _tokenId,
+        address _derivative,
         uint256 _amount
     ) external onlySignedNode(_derivative) nonReentrant {
-        s_lockings[_tokenId][_derivative] = _amount;
+        s_vault.lockToContribute(_tokenId, _derivative, _amount);
     }
 
     /// @notice Authorize from an original to a derivative / Accept the derivative
@@ -180,25 +171,9 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
         if (!s_authorization.isApprovedForAll(msg.sender, address(this)))
             revert NotApprovedForSonarMetaProtocol();
 
-        uint256 amount = s_lockings[_tokenId][_derivative];
-        if (amount == 0) revert AuthorizationMustBeIssuedWithApplication();
+        s_vault.releaseLocking(_tokenId, _derivative, address(this));
 
         Node storage node = s_nodes[_original];
-
-        s_authorization.safeTransferFrom(
-            _original,
-            _derivative,
-            _tokenId,
-            (amount * 19) / 20, // 95% for the derivative
-            ""
-        );
-        s_authorization.safeTransferFrom(
-            _original,
-            address(this),
-            _tokenId,
-            (amount * 1) / 20, // 5% for SonarMeta protocol
-            ""
-        );
 
         node.derivatives[_derivative] = true;
         node.derivativeCount++;
@@ -224,7 +199,7 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
         return ipDaoAddr;
     }
 
-    /// @notice Method for withdrawing authorization tokens to SonarMeta owner
+    /// @notice Method for withdrawing authorization tokens to the admin
     function withdraw() external onlyOwner nonReentrant {
         uint256 totalSupply = s_creation.totalSupply();
 
@@ -245,9 +220,7 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
         );
     }
 
-    //////////////////////////////////////////////////////////
     //////////////////   Getter Functions   //////////////////
-    //////////////////////////////////////////////////////////
 
     /// @notice Check if a node is signed
     function isNodeSigned(address _nodeAddr) external view returns (bool) {

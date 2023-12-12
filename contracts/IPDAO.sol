@@ -21,9 +21,7 @@ contract IpDao is ERC721Holder, Ownable, ReentrancyGuard {
 
     mapping(uint256 => Submission) private s_submissions;
 
-    //////////////////////////////////////////////////////////
     ///////////////////////   Events   ///////////////////////
-    //////////////////////////////////////////////////////////
 
     /// @notice Emitted when a member has been added
     event MemberAdded(address indexed memberAddr);
@@ -38,9 +36,7 @@ contract IpDao is ERC721Holder, Ownable, ReentrancyGuard {
         uint256 weight
     );
 
-    //////////////////////////////////////////////////////////
     /////////////////////   Modifiers   //////////////////////
-    //////////////////////////////////////////////////////////
 
     modifier onlyNotMember(address _memberAddr) {
         require(
@@ -58,13 +54,12 @@ contract IpDao is ERC721Holder, Ownable, ReentrancyGuard {
         _;
     }
 
-    //////////////////////////////////////////////////////////
     ///////////////////   Main Functions   ///////////////////
-    //////////////////////////////////////////////////////////
 
-    constructor(address _initialOwner, address _creationImpAddr)
-        Ownable(_initialOwner)
-    {
+    constructor(
+        address _initialOwner,
+        address _creationImpAddr
+    ) Ownable(_initialOwner) {
         initializeReentrancyGuard();
 
         s_creation = Creation(_creationImpAddr);
@@ -75,12 +70,9 @@ contract IpDao is ERC721Holder, Ownable, ReentrancyGuard {
 
     /// @notice Add a member to this IP DAO by its owner
     /// @param _memberAddr The member address to be added
-    function addMember(address _memberAddr)
-        external
-        onlyOwner
-        onlyNotMember(_memberAddr)
-        nonReentrant
-    {
+    function addMember(
+        address _memberAddr
+    ) external onlyOwner onlyNotMember(_memberAddr) nonReentrant {
         s_members[_memberAddr] = true;
         s_memberCount++;
 
@@ -89,12 +81,9 @@ contract IpDao is ERC721Holder, Ownable, ReentrancyGuard {
 
     /// @notice Remove a member from this IP DAO by its owner
     /// @param _memberAddr The member address to be removed
-    function removeMember(address _memberAddr)
-        external
-        onlyOwner
-        onlyMember(_memberAddr)
-        nonReentrant
-    {
+    function removeMember(
+        address _memberAddr
+    ) external onlyOwner onlyMember(_memberAddr) nonReentrant {
         delete s_members[_memberAddr];
         s_memberCount--;
 
@@ -130,11 +119,9 @@ contract IpDao is ERC721Holder, Ownable, ReentrancyGuard {
 
     /// @notice Method for withdrawing proceeds to member
     /// @param _tbaAddr Address of a TBA owned by this IP DAO
-    function withdrawProceeds(address _tbaAddr)
-        external
-        onlyMember(msg.sender)
-        nonReentrant
-    {
+    function withdrawProceeds(
+        address _tbaAddr
+    ) external onlyMember(msg.sender) nonReentrant {
         // TODO：需要一个tba实现检查给定TBA的owner是不是这个IP DAO
         // address owner = tba.owner(_tbaAddr);
 
@@ -163,9 +150,7 @@ contract IpDao is ERC721Holder, Ownable, ReentrancyGuard {
         require(success, "Transfer failed");
     }
 
-    //////////////////////////////////////////////////////////
     //////////////////   Getter Functions   //////////////////
-    //////////////////////////////////////////////////////////
 
     /// @notice Check if the given address is a member of this IP DAO
     function isMember(address _memberAddr) external view returns (bool) {
