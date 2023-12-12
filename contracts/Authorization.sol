@@ -37,7 +37,7 @@ contract Authorization is ERC1155, Ownable, ERC1155Supply {
         _setURI(_newuri);
     }
 
-    /// @notice Claim authorization token with the corresponding tokenID and mint it up to the maximum limit.
+    /// @notice Claim authorization token with the corresponding tokenID and mint it up to the maximum limit
     /// @param _issuer The issuer token-bound account address
     /// @param _tokenId The corresponding tokenID
     /// @param _maxSupply The maximum limit of this authorization token, e.g. 10,000,000
@@ -52,8 +52,8 @@ contract Authorization is ERC1155, Ownable, ERC1155Supply {
             "The given tokenID has been already claimed."
         );
 
-        _mint(_issuer, _tokenId, (_maxSupply * 19) / 20, ""); // 95%(9,500,000) for node itself.
-        _mint(owner(), _tokenId, (_maxSupply * 1) / 20, ""); // 5%(50,000) for SonarMeta protocol.
+        _mint(_issuer, _tokenId, (_maxSupply * 19) / 20, ""); // 95%(9,500,000) for node itself
+        _mint(owner(), _tokenId, (_maxSupply * 1) / 20, ""); // 5%(50,000) for SonarMeta protocol
     }
 
     function increase(

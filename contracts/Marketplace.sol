@@ -26,19 +26,19 @@ contract Marketplace is Ownable, ReentrancyGuard {
     ///////////////////////   Events   ///////////////////////
     //////////////////////////////////////////////////////////
 
-    /// @notice Emitted when a item is listed or updated
-    event ItemListed(
+    /// @notice Emitted when authorization tokens are listed or updated
+    event AuthorizationListed(
         uint256 indexed tokenId,
         address indexed seller,
         uint256 amount,
         uint256 basePrice
     );
 
-    /// @notice Emitted when a item is canceled
-    event ItemCanceled(address indexed seller, uint256 indexed tokenId);
+    /// @notice Emitted when a listing is canceled
+    event ListingCanceled(address indexed seller, uint256 indexed tokenId);
 
-    /// @notice Emitted when a item is bought
-    event ItemBought(
+    /// @notice Emitted when authorization tokens are bought
+    event AuthorizationBought(
         uint256 indexed tokenId,
         address indexed buyer,
         uint256 amount,
@@ -49,7 +49,7 @@ contract Marketplace is Ownable, ReentrancyGuard {
     ///////////////////////   Errors   ///////////////////////
     //////////////////////////////////////////////////////////
 
-    error IsNotHolder(uint256 tokenId, address derivative);
+    error SellerIsNotDerivative(uint256 tokenId, address derivative);
     error PriceNotMet(uint256 tokenId, uint256 price);
     error InsufficientTokenAmount();
     error NotApprovedForMarketplace();
@@ -67,11 +67,12 @@ contract Marketplace is Ownable, ReentrancyGuard {
     }
 
     /// @notice Method for listing authorization token
+    /// @notice Anyone can buy but the seller needs to be a derivative
     /// @param _tokenId TokenID of the authorization token
     /// @param _amount Amount of the authorization token
     /// @param _basePrice Base price for each authorization token
     /// @param _sonarmeta Address of SonarMeta main contract
-    function listItem(
+    function listAuthorization(
         uint256 _tokenId,
         uint256 _amount,
         uint256 _basePrice,
@@ -83,14 +84,15 @@ contract Marketplace is Ownable, ReentrancyGuard {
         if (_basePrice <= 0) revert PriceMustBeAboveZero();
 
         SonarMeta sonarmeta = SonarMeta(_sonarmeta);
-        if (!sonarmeta.isHolderByTokenId(_tokenId, msg.sender)) revert IsNotHolder(_tokenId, msg.sender);
+        if (!sonarmeta.isDerivativeByTokenId(_tokenId, msg.sender))
+            revert SellerIsNotDerivative(_tokenId, msg.sender);
 
         uint256 value = s_authorization.balanceOf(msg.sender, _tokenId);
         if (value < _amount) revert InsufficientTokenAmount();
 
         s_listings[_tokenId][msg.sender] = Listing(_amount, _basePrice);
 
-        emit ItemListed(_tokenId, msg.sender, _amount, _basePrice);
+        emit AuthorizationListed(_tokenId, msg.sender, _amount, _basePrice);
     }
 
     /// @notice Method for cancelling listing
@@ -98,45 +100,54 @@ contract Marketplace is Ownable, ReentrancyGuard {
     function cancelListing(uint256 _tokenId) external {
         delete s_listings[_tokenId][msg.sender];
 
-        emit ItemCanceled(msg.sender, _tokenId);
+        emit ListingCanceled(msg.sender, _tokenId);
     }
 
     /// @notice Method for buying listing for a node
-    /// @notice The owner of an NFT could unapprove the marketplace,
+    /// @notice Anyone can buy but the seller needs to be a derivative
+    /// @notice The owner could unapprove the marketplace,
     /// which would cause this function to fail
     /// Ideally you'd also have a `createOffer` functionality.
     /// @param _tokenId TokenID of the authorization token
     /// @param _seller The seller of the authorization token
     /// @param _amount Amount that the buyer wants
-    function buyItemFor(
+    function buyAuthorization(
         uint256 _tokenId,
         address _seller,
         uint256 _amount
     ) external payable nonReentrant {
-        Listing storage listedItem = s_listings[_tokenId][_seller];
-        uint256 price = listedItem.basePrice * _amount;
+        Listing storage listedAuthorization = s_listings[_tokenId][_seller];
+        uint256 price = listedAuthorization.basePrice * _amount;
 
-        if (_amount > listedItem.amount) revert InsufficientTokenAmount();
+        if (_amount > listedAuthorization.amount)
+            revert InsufficientTokenAmount();
         if (msg.value < price) revert PriceNotMet(_tokenId, price);
 
         s_proceeds[_seller] += msg.value;
-        listedItem.amount -= _amount;
+        listedAuthorization.amount -= _amount;
 
-        if (listedItem.amount == 0) {
+        if (listedAuthorization.amount == 0) {
             delete s_listings[_tokenId][_seller];
 
-            emit ItemCanceled(_seller, _tokenId);
+            emit ListingCanceled(_seller, _tokenId);
         }
 
         s_authorization.safeTransferFrom(
             _seller,
             msg.sender,
             _tokenId,
-            _amount,
+            (_amount * 19) / 20, // 95% for the buyer
+            ""
+        );
+        s_authorization.safeTransferFrom(
+            _seller,
+            address(this),
+            _tokenId,
+            (_amount * 1) / 20, // 5% for SonarMeta protocol
             ""
         );
 
-        emit ItemBought(_tokenId, msg.sender, _amount, price);
+        emit AuthorizationBought(_tokenId, msg.sender, _amount, price);
     }
 
     /// @notice Method for withdrawing proceeds from sales

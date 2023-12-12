@@ -13,23 +13,21 @@ import "./utils/Counters.sol";
 /// @title SonarMeta main contract
 /// @author SonarX (Hangzhou) Technology Co., Ltd.
 contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
-    /// @notice TBA information struct
-    struct Tba {
-        bool isSigned; // If this TBA is signed to use SonarMeta
+    /// @notice Node information struct
+    struct Node {
+        bool isSigned; // If this node is signed to use SonarMeta protocol
         uint256 tokenId; // The tokenID of the corresponding creation
-        mapping(address => bool) holders; // All holder TBAs of this TBA
-        uint256 holderCount; // The amount of holder TBAs of this TBA
-        uint256 nodeValue; // The value of this TBA
+        mapping(address => bool) derivatives; // All derivatives of this node
+        uint256 derivativeCount; // The amount of derivatives of this node
+        uint256 nodeValue; // The value of this node
     }
 
-    // Track TBA infos, TBA address => TBA info
-    mapping(address => Tba) private s_tbas;
+    // Track node infos, token-bound account address => node info
+    mapping(address => Node) private s_nodes;
     // Track locking tokens of each original tokenID - derivative pair
     mapping(uint256 => mapping(address => uint256)) private s_lockings;
     // Track all IP DAOs deployed by SonarMeta
     mapping(address => bool) private s_ipDaos;
-
-    address private s_creationImpAddr;
 
     Governance private s_governance;
     Creation private s_creation;
@@ -39,8 +37,8 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
     ///////////////////////   Events   ///////////////////////
     //////////////////////////////////////////////////////////
 
-    /// @notice Emitted when a TBA is signed to use SonarMeta
-    event TbaSigned(address indexed tbaAddr);
+    /// @notice Emitted when a node is signed to use SonarMeta
+    event NodeSigned(address indexed nodeAddr);
 
     /// @notice Emitted when authorized
     event Authorized(
@@ -53,38 +51,43 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
     event IpDaoDeployed(address indexed ipDaoAddr, address indexed owner);
 
     //////////////////////////////////////////////////////////
+    ///////////////////////   Errors   ///////////////////////
+    //////////////////////////////////////////////////////////
+
+    error NodeNotSigned(address nodeAddr);
+    error AuthorizationMustBeIssuedByOriginal(
+        address nodeAddr,
+        uint256 tokenId
+    );
+    error NodeIsNotDerivative(address original, address derivative);
+    error NodeIsDerivative(address original, address derivative);
+    error NotApprovedForSonarMetaProtocol();
+    error AuthorizationMustBeIssuedWithApplication();
+
+    //////////////////////////////////////////////////////////
     /////////////////////   Modifiers   //////////////////////
     //////////////////////////////////////////////////////////
 
-    modifier onlySignedTba(address _tbaAddr) {
-        require(
-            s_tbas[_tbaAddr].isSigned,
-            "Address provided must be a signed TBA towards SonarMeta."
-        );
+    modifier onlySignedNode(address _nodeAddr) {
+        if (!s_nodes[_nodeAddr].isSigned) revert NodeNotSigned(_nodeAddr);
         _;
     }
 
-    modifier onlyIssuer(address _tbaAddr, uint256 _tokenId) {
-        require(
-            s_tbas[_tbaAddr].tokenId == _tokenId,
-            "Authorization token must be issued by its corresponding creation's TBA."
-        );
+    modifier onlyOriginal(address _nodeAddr, uint256 _tokenId) {
+        if (!(s_nodes[_nodeAddr].tokenId == _tokenId))
+            revert AuthorizationMustBeIssuedByOriginal(_nodeAddr, _tokenId);
         _;
     }
 
-    modifier onlyHolder(address _issuer, address _holder) {
-        require(
-            s_tbas[_issuer].holders[_holder],
-            "This TBA has not been authorized (a holder) yet."
-        );
+    modifier onlyDerivative(address _original, address _derivative) {
+        if (!s_nodes[_original].derivatives[_derivative])
+            revert NodeIsNotDerivative(_original, _derivative);
         _;
     }
 
-    modifier onlyNotHolder(address _issuer, address _holder) {
-        require(
-            !s_tbas[_issuer].holders[_holder],
-            "This TBA has been already (a holder) authorized."
-        );
+    modifier onlyNotDerivative(address _original, address _derivative) {
+        if (s_nodes[_original].derivatives[_derivative])
+            revert NodeIsDerivative(_original, _derivative);
         _;
     }
 
@@ -101,8 +104,6 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
         s_governance = Governance(owner());
         s_creation = Creation(_creationImpAddr);
         s_authorization = Authorization(_authorizationImpAddr);
-
-        s_creationImpAddr = _creationImpAddr;
     }
 
     /// @notice Mint a new creation/component token
@@ -114,104 +115,106 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
         return tokenId;
     }
 
-    /// @notice A TBA signs to use SonarMeta
-    /// @param _tbaAddr The TBA address wants to sign
-    /// @param _tokenId The creation tokenID corresponding to this TBA
-    function signNode(
-        address _tbaAddr,
+    /// @notice A Node signs to use SonarMeta
+    /// @param _nodeAddr The token-bound account address of this node that wants to sign
+    /// @param _tokenId The creation tokenID corresponding to this node
+    function signNodeToUse(
+        address _nodeAddr,
         uint256 _tokenId
     ) external nonReentrant {
-        Tba storage tba = s_tbas[_tbaAddr];
-        tba.isSigned = true;
+        Node storage node = s_nodes[_nodeAddr];
+        node.isSigned = true;
 
-        s_tbas[_tbaAddr].tokenId = _tokenId;
+        s_nodes[_nodeAddr].tokenId = _tokenId;
 
-        emit TbaSigned(_tbaAddr);
+        emit NodeSigned(_nodeAddr);
     }
 
-    /// @notice Mint corresponding authorization tokens to make the node a issuer
-    /// @param _tbaAddr The TBA address wants to activate authorization
-    /// @param _tokenId The creation tokenID corresponding to this TBA
+    /// @notice Mint corresponding authorization tokens to make the node a original
+    /// @param _nodeAddr The token-bound account address of this node that wants to activate authorization
+    /// @param _tokenId The authorization tokenID corresponding to this node
     /// @param _maxSupply The maximum limit of this authorization token, e.g. 10,000,000
     function activateNode(
-        address _tbaAddr,
+        address _nodeAddr,
         uint256 _tokenId,
         uint256 _maxSupply
     )
         external
-        onlySignedTba(_tbaAddr)
-        onlyIssuer(_tbaAddr, _tokenId)
+        onlySignedNode(_nodeAddr)
+        onlyOriginal(_nodeAddr, _tokenId)
         nonReentrant
     {
-        s_authorization.initialClaim(_tbaAddr, _tokenId, _maxSupply);
+        s_authorization.initialClaim(_nodeAddr, _tokenId, _maxSupply);
     }
 
     /// @notice Accept a first-time application from a derivative node
-    /// @param _derivative The TBA which is going to apply
+    /// @param _derivative The node which is going to be applied
     /// @param _tokenId The tokenID of the original node
     /// @param _amount The amount the original node wants to give
     function acceptApplication(
         address _derivative,
         uint256 _tokenId,
         uint256 _amount
-    ) external onlySignedTba(_derivative) nonReentrant {
+    ) external onlySignedNode(_derivative) nonReentrant {
         s_lockings[_tokenId][_derivative] = _amount;
     }
 
     /// @notice Authorize from an original to a derivative / Accept the derivative
-    /// @param _original The TBA which will issue the authorization token
-    /// @param _derivative The TBA which will receive the authorization token
+    /// @param _original The node which will issue the authorization token
+    /// @param _derivative The node which will receive the authorization token
     /// @param _tokenId The tokenID of the creation token
-    /// @return The total holder amount of the creation
+    /// @return The total derivative amount of the creation
     function authorize(
         address _original,
         address _derivative,
         uint256 _tokenId
     )
         external
-        onlySignedTba(_original)
-        onlySignedTba(_derivative)
-        onlyIssuer(_original, _tokenId)
-        onlyNotHolder(_original, _derivative)
+        onlySignedNode(_original)
+        onlySignedNode(_derivative)
+        onlyOriginal(_original, _tokenId)
+        onlyNotDerivative(_original, _derivative)
         nonReentrant
         returns (uint256)
     {
-        require(
-            s_authorization.isApprovedForAll(msg.sender, address(this)),
-            "Not approved for SonarMeta protocol."
-        );
+        if (!s_authorization.isApprovedForAll(msg.sender, address(this)))
+            revert NotApprovedForSonarMetaProtocol();
 
         uint256 amount = s_lockings[_tokenId][_derivative];
-        require(amount > 0, "Cannot authorize a TBA without application.");
+        if (amount == 0) revert AuthorizationMustBeIssuedWithApplication();
 
-        Tba storage tba = s_tbas[_original];
+        Node storage node = s_nodes[_original];
 
         s_authorization.safeTransferFrom(
             _original,
             _derivative,
             _tokenId,
-            (amount * 19) / 20, // 95% for the derivative.
+            (amount * 19) / 20, // 95% for the derivative
             ""
         );
         s_authorization.safeTransferFrom(
             _original,
             address(this),
             _tokenId,
-            (amount * 1) / 20, // 5% for SonarMeta protocol.
+            (amount * 1) / 20, // 5% for SonarMeta protocol
             ""
         );
 
-        tba.holders[_derivative] = true;
-        tba.holderCount++;
+        node.derivatives[_derivative] = true;
+        node.derivativeCount++;
 
         emit Authorized(_tokenId, _original, _derivative);
 
-        return tba.holderCount;
+        return node.derivativeCount;
     }
 
-    /// @notice Deploy a new IP DAO
-    function deployIpDao() external nonReentrant returns (address) {
-        IpDao ipDao = new IpDao(msg.sender, s_creationImpAddr);
+    /// @notice Deploy a new IP DAO contract
+    /// @param _creationImpAddr the address of the creation contract
+    /// @return the address of the new IP DAO contract
+    function deployIpDao(
+        address _creationImpAddr
+    ) external nonReentrant returns (address) {
+        IpDao ipDao = new IpDao(msg.sender, _creationImpAddr);
         address ipDaoAddr = address(ipDao);
 
         s_ipDaos[ipDaoAddr] = true;
@@ -246,46 +249,46 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
     //////////////////   Getter Functions   //////////////////
     //////////////////////////////////////////////////////////
 
-    /// @notice Check if a TBA is signed
-    function isTbaSigned(address _tbaAddr) external view returns (bool) {
-        return s_tbas[_tbaAddr].isSigned;
+    /// @notice Check if a node is signed
+    function isNodeSigned(address _nodeAddr) external view returns (bool) {
+        return s_nodes[_nodeAddr].isSigned;
     }
 
     /// @notice Check if a node is another node's derivative
-    function isHolderByAddress(
+    function isDerivativeByAddress(
         address _original,
         address _derivative
     )
         external
         view
-        onlySignedTba(_original)
-        onlySignedTba(_derivative)
+        onlySignedNode(_original)
+        onlySignedNode(_derivative)
         returns (bool)
     {
-        return s_tbas[_original].holders[_derivative];
+        return s_nodes[_original].derivatives[_derivative];
     }
 
     /// @notice Check if a node is another node's derivative
-    function isHolderByTokenId(
+    function isDerivativeByTokenId(
         uint256 _tokenId,
         address _derivative
-    ) external view onlySignedTba(_derivative) returns (bool) {
+    ) external view onlySignedNode(_derivative) returns (bool) {
         address original = s_creation.ownerOf(_tokenId);
-        return s_tbas[original].holders[_derivative];
+        return s_nodes[original].derivatives[_derivative];
     }
 
-    /// @notice Get the total amount of holders of a TBA
-    function getHolderCount(
-        address _tbaAddr
-    ) external view onlySignedTba(_tbaAddr) returns (uint256) {
-        return s_tbas[_tbaAddr].holderCount;
+    /// @notice Get the total amount of derivatives of an original
+    function getDerivativeCount(
+        address _nodeAddr
+    ) external view onlySignedNode(_nodeAddr) returns (uint256) {
+        return s_nodes[_nodeAddr].derivativeCount;
     }
 
-    /// @notice Get the nodeValue of a TBA
+    /// @notice Get the nodeValue of a node
     function getNodeValue(
-        address _tbaAddr
-    ) external view onlySignedTba(_tbaAddr) returns (uint256) {
-        return s_tbas[_tbaAddr].nodeValue;
+        address _nodeAddr
+    ) external view onlySignedNode(_nodeAddr) returns (uint256) {
+        return s_nodes[_nodeAddr].nodeValue;
     }
 
     /// @notice Check if an IP DAO is tracked
