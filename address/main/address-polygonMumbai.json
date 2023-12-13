@@ -1,8 +1,9 @@
 {
-    "main": "0xd7c68ffbcdae5ddc171af7d5b707f1f521253ae8",
-    "governance": "0x810c3e508b93949fcec4388e90dc0e8c49661792",
-    "creation": "0xbee00961f5e0a8284a8ceaf8e3e96deca83e0d49",
-    "authorization": "0x3074a2e5bcd7e090ac88a20033af9f17efeec934",
-    "marketplace": "0xbe506ab0e83a09e288283b6249c537d3de2a16a6",
-    "receiver": "0x2e19d7793268a013fe5d83f3b24e0676ad2c67ed"
+    "main": "0xcf04ab72dda8bd64169a1caf644b0060a74c69f5",
+    "governance": "0xd5a17dd994f79fef752dfc50a9ec1d01eaf083ba",
+    "creation": "0x779b3c60f149da23481ad074886ec9bc7e407a49",
+    "authorization": "0x05f55d43bb34055a2acad2f69ee8f4f238bd3541",
+    "lockingVault": "0x3dd1cfb313e3bbc50f872204fd2d642cc8d4e082",
+    "marketplace": "0x698a220e992c8c733c57d2da175b2e77238ca6db",
+    "receiver": "0x90c71883a43670febdccc54f8f8a44a8e569a4c2"
 }

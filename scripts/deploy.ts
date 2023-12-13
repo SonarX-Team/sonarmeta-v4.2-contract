@@ -18,7 +18,14 @@ async function main() {
   const creation = await hre.viem.deployContract("Creation", [owner.account.address]);
 
   console.log("Deploying Authorization contract...");
-  const authorization = await hre.viem.deployContract("Authorization", [owner.account.address]);
+  const authorization = await hre.viem.deployContract("Authorization", [
+    "SonarMeta IP Network Edge",
+    "SMINE",
+    owner.account.address,
+  ]);
+
+  console.log("Deploying Authorization contract...");
+  const lockingVault = await hre.viem.deployContract("LockingVault", [owner.account.address, authorization.address]);
 
   console.log("Deploying Marketplace contract...");
   const marketplace = await hre.viem.deployContract("Marketplace", [authorization.address]);
@@ -27,7 +34,11 @@ async function main() {
   const governance = await hre.viem.deployContract("Governance");
 
   console.log("Deploying SonarMeta main contract...");
-  const main = await hre.viem.deployContract("SonarMeta", [creation.address, authorization.address]);
+  const main = await hre.viem.deployContract("SonarMeta", [
+    creation.address,
+    authorization.address,
+    lockingVault.address,
+  ]);
 
   console.log("Deploying CCIP message receiver contract...");
   const receiver = await hre.viem.deployContract("MessageReceiver", [routerAddr, linkAddr]);
@@ -38,6 +49,7 @@ async function main() {
   // Transfer Ownership
   await creation.write.transferOwnership([main.address]);
   await authorization.write.transferOwnership([main.address]);
+  await lockingVault.write.transferOwnership([main.address]);
 
   console.log("Deployed!");
 
@@ -47,6 +59,7 @@ async function main() {
     governance: governance.address,
     creation: creation.address,
     authorization: authorization.address,
+    lockingVault: lockingVault.address,
     marketplace: marketplace.address,
     receiver: receiver.address,
   };

@@ -15,10 +15,7 @@ contract Creation is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
 
     constructor(
         address _initialOwner
-    )
-        ERC721("SonarMeta Creation Network Node", "SMCNN")
-        Ownable(_initialOwner)
-    {}
+    ) ERC721("SonarMeta IP Network Node", "SMINN") Ownable(_initialOwner) {}
 
     function _baseURI() internal pure override returns (string memory) {
         return "https://en.sonarmeta.com/api/metadata/creation/";
