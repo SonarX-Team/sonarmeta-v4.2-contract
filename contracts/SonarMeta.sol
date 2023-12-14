@@ -36,6 +36,17 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
     /// @notice Emitted when a node is signed to use the SonarMeta protocol
     event NodeSigned(address indexed nodeAddr);
 
+    /// @notice Emitted when a node is activated
+    event NodeActivated(address indexed nodeAddr);
+
+    /// @notice Emitted when an application is accepted
+    event ApplictaionAccepted(
+        uint256 indexed tokenId,
+        address indexed original,
+        address indexed derivative,
+        uint256 amount
+    );
+
     /// @notice Emitted when authorized
     event Authorized(
         uint256 indexed tokenId,
@@ -55,7 +66,7 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
     );
     error NodeIsNotDerivative(address original, address derivative);
     error NodeIsDerivative(address original, address derivative);
-    error NotApprovedForSonarMetaProtocol();
+    error NotApprovedForSonarMetaProtocol(address original);
 
     /////////////////////   Modifiers   //////////////////////
 
@@ -136,9 +147,12 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
         nonReentrant
     {
         s_authorization.initialClaim(_nodeAddr, _tokenId, _maxSupply);
+
+        emit NodeActivated(_nodeAddr);
     }
 
-    /// @notice Accept a first-time application from a derivative node
+    /// @notice Accept a first-time application from an inclined derivative by original
+    /// msg.sender must be the original node
     /// @param _tokenId The tokenID of the original node
     /// @param _derivative The node which is going to be applied
     /// @param _amount The amount the original node wants to give
@@ -146,39 +160,47 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
         uint256 _tokenId,
         address _derivative,
         uint256 _amount
-    ) external onlySignedNode(_derivative) nonReentrant {
+    )
+        external
+        onlySignedNode(msg.sender)
+        onlySignedNode(_derivative)
+        onlyOriginal(msg.sender, _tokenId)
+        onlyNotDerivative(msg.sender, _derivative)
+        nonReentrant
+    {
         s_vault.lockToContribute(_tokenId, _derivative, _amount);
+
+        emit ApplictaionAccepted(_tokenId, msg.sender, _derivative, _amount);
     }
 
-    /// @notice Authorize from an original to a derivative / Accept the derivative
-    /// @param _original The node which will issue the authorization token
+    /// @notice Authorize from an original to a derivative
+    /// msg.sender must be the original node
     /// @param _derivative The node which will receive the authorization token
     /// @param _tokenId The tokenID of the creation token
     /// @return The total derivative amount of the creation
     function authorize(
-        address _original,
         address _derivative,
         uint256 _tokenId
     )
         external
-        onlySignedNode(_original)
+        onlySignedNode(msg.sender)
         onlySignedNode(_derivative)
-        onlyOriginal(_original, _tokenId)
-        onlyNotDerivative(_original, _derivative)
+        onlyOriginal(msg.sender, _tokenId)
+        onlyNotDerivative(msg.sender, _derivative)
         nonReentrant
         returns (uint256)
     {
         if (!s_authorization.isApprovedForAll(msg.sender, address(this)))
-            revert NotApprovedForSonarMetaProtocol();
+            revert NotApprovedForSonarMetaProtocol(msg.sender);
 
         s_vault.releaseLocking(_tokenId, _derivative, address(this));
 
-        Node storage node = s_nodes[_original];
+        Node storage node = s_nodes[msg.sender];
 
         node.derivatives[_derivative] = true;
         node.derivativeCount++;
 
-        emit Authorized(_tokenId, _original, _derivative);
+        emit Authorized(_tokenId, msg.sender, _derivative);
 
         return node.derivativeCount;
     }
