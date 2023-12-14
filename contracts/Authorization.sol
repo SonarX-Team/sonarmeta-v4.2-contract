@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
+import "./Creation.sol";
 
 /// @title SonarMeta authorization contract
 /// @author SonarX (Hangzhou) Technology Co., Ltd.
@@ -13,9 +14,12 @@ contract Authorization is ERC1155, Ownable, ERC1155Supply {
     string private _name;
     string private _symbol;
 
+    Creation private s_creation;
+
     constructor(
         string memory name_,
         string memory symbol_,
+        address _creationImpAddr,
         address _initialOwner
     )
         ERC1155("https://en.sonarmeta.com/api/metadata/authorization/{id}")
@@ -23,6 +27,7 @@ contract Authorization is ERC1155, Ownable, ERC1155Supply {
     {
         _name = name_;
         _symbol = symbol_;
+        s_creation = Creation(_creationImpAddr);
     }
 
     function name() public view returns (string memory) {
@@ -58,22 +63,21 @@ contract Authorization is ERC1155, Ownable, ERC1155Supply {
 
     /// @notice Get all token IDs held by a specific address
     /// @param _owner the address of the given owner
-    /// @return All tokenIDs that this owner have
+    /// @return All tokenIDs that this owner has
     function getTokenIds(
         address _owner
-    ) public view returns (uint256[] memory) {
-        uint256[] memory tokenIds;
-        uint256 count;
+    ) external view returns (uint256[] memory) {
+        uint256 count = 0;
 
         // Count the number of token IDs held by the address
-        for (uint256 i = 1; i <= totalSupply(); i++)
+        for (uint256 i = 1; i <= s_creation.totalSupply(); i++)
             if (balanceOf(_owner, i) > 0) count++;
 
         // Populate the array with token IDs
-        tokenIds = new uint256[](count);
+        uint256[] memory tokenIds = new uint256[](count);
         count = 0;
 
-        for (uint256 i = 1; i < totalSupply(); i++)
+        for (uint256 i = 1; i <= s_creation.totalSupply(); i++)
             if (balanceOf(_owner, i) > 0) {
                 tokenIds[count] = i;
                 count++;

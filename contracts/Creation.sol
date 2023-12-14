@@ -21,7 +21,7 @@ contract Creation is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
         return "https://en.sonarmeta.com/api/metadata/creation/";
     }
 
-    function mint(address _to) public onlyOwner returns (uint256) {
+    function mint(address _to) external onlyOwner returns (uint256) {
         require(_to != address(0), "Destination address can't be zero.");
 
         _tokenIdCounter.increment();
@@ -36,7 +36,7 @@ contract Creation is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
     /// @return All tokenIDs that this owner have
     function getTokenIds(
         address _owner
-    ) public view returns (uint256[] memory) {
+    ) external view returns (uint256[] memory) {
         uint256 balance = balanceOf(_owner);
         uint256[] memory tokenIds = new uint256[](balance);
 

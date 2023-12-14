@@ -44,7 +44,10 @@ contract Marketplace is Ownable, ReentrancyGuard {
 
     ///////////////////////   Errors   ///////////////////////
 
-    error SellerIsNotDerivative(uint256 tokenId, address derivative);
+    error SellerIsNeitherOriginalNorDerivative(
+        uint256 tokenId,
+        address derivative
+    );
     error PriceNotMet(uint256 tokenId, uint256 price);
     error InsufficientTokenAmount();
     error NotApprovedForMarketplace();
@@ -77,8 +80,10 @@ contract Marketplace is Ownable, ReentrancyGuard {
         if (_basePrice <= 0) revert PriceMustBeAboveZero();
 
         SonarMeta sonarmeta = SonarMeta(_sonarmetaImpAddr);
-        if (!sonarmeta.isDerivativeByTokenId(_tokenId, msg.sender))
-            revert SellerIsNotDerivative(_tokenId, msg.sender);
+        if (
+            !sonarmeta.isOriginal(msg.sender, _tokenId) &&
+            !sonarmeta.isDerivativeByTokenId(_tokenId, msg.sender)
+        ) revert SellerIsNeitherOriginalNorDerivative(_tokenId, msg.sender);
 
         uint256 value = s_authorization.balanceOf(msg.sender, _tokenId);
         if (value < _amount) revert InsufficientTokenAmount();

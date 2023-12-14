@@ -1,9 +1,9 @@
 {
-    "main": "0xcf04ab72dda8bd64169a1caf644b0060a74c69f5",
-    "governance": "0xd5a17dd994f79fef752dfc50a9ec1d01eaf083ba",
-    "creation": "0x779b3c60f149da23481ad074886ec9bc7e407a49",
-    "authorization": "0x05f55d43bb34055a2acad2f69ee8f4f238bd3541",
-    "lockingVault": "0x3dd1cfb313e3bbc50f872204fd2d642cc8d4e082",
-    "marketplace": "0x698a220e992c8c733c57d2da175b2e77238ca6db",
-    "receiver": "0x90c71883a43670febdccc54f8f8a44a8e569a4c2"
+    "main": "0xb018789fb0effd0eb29eea81d7eb2961aa47151d",
+    "governance": "0x8bd796d643fdc30089ebeffa9dbb99c64bd053a6",
+    "creation": "0x3bbfe49f133945bf39840837be7e8699e1a016de",
+    "authorization": "0x04ef64b8e9e5c040bf98e81f7aa1f9ca8b2fd45c",
+    "lockingVault": "0x0c978401bf7f6152b97d61f663629c01c6244227",
+    "marketplace": "0x99dcda2605634edbbf5ba2236d2aafc4c3347b4f",
+    "receiver": "0x8619d55ad8b962daabe1e7a1e27143e96835cde3"
 }

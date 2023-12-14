@@ -21,10 +21,11 @@ async function main() {
   const authorization = await hre.viem.deployContract("Authorization", [
     "SonarMeta IP Network Edge",
     "SMINE",
+    creation.address,
     owner.account.address,
   ]);
 
-  console.log("Deploying Authorization contract...");
+  console.log("Deploying LockingVault contract...");
   const lockingVault = await hre.viem.deployContract("LockingVault", [owner.account.address, authorization.address]);
 
   console.log("Deploying Marketplace contract...");

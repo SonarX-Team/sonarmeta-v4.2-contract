@@ -227,6 +227,14 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
         return s_nodes[_nodeAddr].isSigned;
     }
 
+    /// @notice Check if a node is an original to a tokenID
+    function isOriginal(
+        address _original,
+        uint256 _tokenId
+    ) external view returns (bool) {
+        return s_nodes[_original].tokenId == _tokenId;
+    }
+
     /// @notice Check if a node is another node's derivative
     function isDerivativeByAddress(
         address _original,
