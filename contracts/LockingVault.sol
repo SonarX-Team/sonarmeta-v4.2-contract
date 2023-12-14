@@ -112,11 +112,33 @@ contract LockingVault is ERC1155Holder, Ownable, ReentrancyGuard {
     /// @param _tokenId the tokenID of the locking authorization tokens
     /// @param _derivative the address of the inclined derivative
     /// @return the locking amount and lock timestamp
-    function getLockingInfo(
+    function getLockingAmount(
         uint256 _tokenId,
         address _derivative
     ) external view returns (uint256, uint256) {
         LockingInfo memory lockingInfo = s_lockings[_tokenId][_derivative];
+
         return (lockingInfo.amount, lockingInfo.lockTimestamp);
+    }
+
+    /// @notice Get remaining locking time for a given derivative and tokenId
+    /// @param _tokenId The tokenID of the original node
+    /// @param _derivative The node which is going to become a derivative
+    /// @return Remaining locking time in seconds
+    function getLockingTimeRemaining(
+        uint256 _tokenId,
+        address _derivative
+    ) external view returns (uint256) {
+        LockingInfo memory lockingInfo = s_lockings[_tokenId][_derivative];
+
+        if (lockingInfo.amount == 0) revert NoLockings();
+
+        uint256 elapsedTime = block.timestamp - lockingInfo.lockTimestamp;
+        uint256 remainingTime = 0;
+
+        if (elapsedTime < LOCK_DURATION)
+            remainingTime = LOCK_DURATION - elapsedTime;
+
+        return remainingTime;
     }
 }
