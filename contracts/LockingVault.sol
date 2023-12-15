@@ -36,8 +36,9 @@ contract LockingVault is ERC1155Holder, Ownable, ReentrancyGuard {
     );
 
     ///////////////////////   Errors   ///////////////////////
-    error LockingDurationNotReached();
     error LockingAmountMustBeAboveZero();
+    error LockingAlreadyExists();
+    error LockingDurationNotReached();
     error NoLockings();
 
     ///////////////////   Main Functions   ///////////////////
@@ -61,6 +62,10 @@ contract LockingVault is ERC1155Holder, Ownable, ReentrancyGuard {
         uint256 _amount
     ) external onlyOwner nonReentrant {
         if (_amount == 0) revert LockingAmountMustBeAboveZero();
+
+        LockingInfo storage lockingInfo = s_lockings[_tokenId][_derivative];
+
+        if (lockingInfo.amount > 0) revert LockingAlreadyExists();
 
         s_lockings[_tokenId][_derivative] = LockingInfo({
             amount: _amount,
@@ -108,30 +113,17 @@ contract LockingVault is ERC1155Holder, Ownable, ReentrancyGuard {
 
     //////////////////   Getter Functions   //////////////////
 
-    /// @notice Get locking amount and lock timestamp by tokenID and the inclined derivative
-    /// @param _tokenId the tokenID of the locking authorization tokens
-    /// @param _derivative the address of the inclined derivative
-    /// @return the locking amount and lock timestamp
-    function getLockingAmount(
+    /// @notice Get locking amount and remaining locking time for a given derivative and tokenId
+    /// @param _tokenId The tokenID of the original node
+    /// @param _derivative The node which is going to become a derivative
+    /// @return Locking amount, remaining locking time in seconds
+    function getLockingInfo(
         uint256 _tokenId,
         address _derivative
     ) external view returns (uint256, uint256) {
         LockingInfo memory lockingInfo = s_lockings[_tokenId][_derivative];
 
-        return (lockingInfo.amount, lockingInfo.lockTimestamp);
-    }
-
-    /// @notice Get remaining locking time for a given derivative and tokenId
-    /// @param _tokenId The tokenID of the original node
-    /// @param _derivative The node which is going to become a derivative
-    /// @return Remaining locking time in seconds
-    function getLockingTimeRemaining(
-        uint256 _tokenId,
-        address _derivative
-    ) external view returns (uint256) {
-        LockingInfo memory lockingInfo = s_lockings[_tokenId][_derivative];
-
-        if (lockingInfo.amount == 0) revert NoLockings();
+        if (lockingInfo.amount == 0) return (0, 0);
 
         uint256 elapsedTime = block.timestamp - lockingInfo.lockTimestamp;
         uint256 remainingTime = 0;
@@ -139,6 +131,6 @@ contract LockingVault is ERC1155Holder, Ownable, ReentrancyGuard {
         if (elapsedTime < LOCK_DURATION)
             remainingTime = LOCK_DURATION - elapsedTime;
 
-        return remainingTime;
+        return (lockingInfo.amount, remainingTime);
     }
 }

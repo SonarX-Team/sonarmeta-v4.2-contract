@@ -48,7 +48,7 @@ contract Marketplace is Ownable, ReentrancyGuard {
         uint256 tokenId,
         address derivative
     );
-    error PriceNotMet(uint256 tokenId, uint256 price);
+    error PriceNotMet(uint256 tokenId, uint256 bid, uint256 price);
     error InsufficientTokenAmount();
     error NotApprovedForMarketplace();
     error PriceMustBeAboveZero();
@@ -102,7 +102,7 @@ contract Marketplace is Ownable, ReentrancyGuard {
     }
 
     /// @notice Method for buying listing for a node
-    /// @notice Anyone can buy but the seller needs to be a derivative
+    /// @notice Anyone can buy but the seller needs to be the original or a derivative
     /// @notice The owner could unapprove the marketplace,
     /// which would cause this function to fail
     /// Ideally you'd also have a `createOffer` functionality.
@@ -119,7 +119,7 @@ contract Marketplace is Ownable, ReentrancyGuard {
 
         if (_amount > listedAuthorization.amount)
             revert InsufficientTokenAmount();
-        if (msg.value < price) revert PriceNotMet(_tokenId, price);
+        if (msg.value < price) revert PriceNotMet(_tokenId, msg.value, price);
 
         s_proceeds[_seller] += msg.value;
         listedAuthorization.amount -= _amount;
