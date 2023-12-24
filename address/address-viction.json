@@ -1,0 +1,8 @@
+{
+    "main": "0x746ff97588f3e0d8df2e09333d68368f509db35a",
+    "governance": "0x389c15affdbb9dbc60ea50ad5d07b9b64f858932",
+    "creation": "0x74f41df41b8a200a884a249574e27b2ee69ac5a1",
+    "authorization": "0x863e23f54300acc6ab271eb40f46a699d69668be",
+    "lockingVault": "0x9087e0b89fc1b30e004bc4c371add9990da7f1ba",
+    "marketplace": "0x61a3f47f7d7a55565a82807ead6b3ffd951d19bf"
+}

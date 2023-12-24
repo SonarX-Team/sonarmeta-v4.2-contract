@@ -1,0 +1,9 @@
+{
+    "main": "0xe0dc9879bb5d9a708e7240650c3ef22d209fe7b2",
+    "governance": "0xcdfccdedaeee6d28003b457cb990fd4e4f217b7c",
+    "creation": "0x745777f41a50b1709c7956a184837fbb5b482f1f",
+    "authorization": "0x628e40a33db30e64c68ea4eb6fbfcf6871c7e02e",
+    "lockingVault": "0xd9398ba4b8846296b3e96493af29de2ba65fbbc8",
+    "marketplace": "0x79759ca28073af04e4fd47e9407759acca31e5bf",
+    "receiver": "0xa7896956bbad4b776411b7996b338179c8bfeca1"
+}

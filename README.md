@@ -1,4 +1,4 @@
-# SonarMeta v4.2 EVM contracts
+# SonarMeta v4.3 EVM contracts
 
 ## Demo resources
 
@@ -15,11 +15,6 @@
 - Creation (network node) collection: 0xbee00961f5e0a8284a8ceaf8e3e96deca83e0d49
 - Authorization (network edge) collection: 0x3074a2e5bcd7e090ac88a20033af9f17efeec934
 - Marketplace contract: 0xbe506ab0e83a09e288283b6249c537d3de2a16a6
-- Chainlink CCIP receiver contract: 0x2e19d7793268a013fe5d83f3b24e0676ad2c67ed
-
-### Avalanche Fuji
-
-- Chainlink CCIP sender contract: 0x9817a7faaeab2ff87d270a6f192cb49bb8d81e85
 
 ## Vision
 

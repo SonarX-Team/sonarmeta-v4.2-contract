@@ -24,7 +24,7 @@ contract Marketplace is Ownable, ReentrancyGuard {
     ///////////////////////   Events   ///////////////////////
 
     /// @notice Emitted when authorization tokens are listed or updated
-    event AuthorizationListed(
+    event Listed(
         uint256 indexed tokenId,
         address indexed seller,
         uint256 amount,
@@ -35,7 +35,7 @@ contract Marketplace is Ownable, ReentrancyGuard {
     event ListingCanceled(address indexed seller, uint256 indexed tokenId);
 
     /// @notice Emitted when authorization tokens are bought
-    event AuthorizationBought(
+    event ListingBought(
         uint256 indexed tokenId,
         address indexed buyer,
         uint256 amount,
@@ -68,7 +68,7 @@ contract Marketplace is Ownable, ReentrancyGuard {
     /// @param _amount Amount of the authorization token
     /// @param _basePrice Base price for each authorization token
     /// @param _sonarmetaImpAddr Address of the SonarMeta main contract
-    function listAuthorization(
+    function listForSale(
         uint256 _tokenId,
         uint256 _amount,
         uint256 _basePrice,
@@ -90,7 +90,7 @@ contract Marketplace is Ownable, ReentrancyGuard {
 
         s_listings[_tokenId][msg.sender] = Listing(_amount, _basePrice);
 
-        emit AuthorizationListed(_tokenId, msg.sender, _amount, _basePrice);
+        emit Listed(_tokenId, msg.sender, _amount, _basePrice);
     }
 
     /// @notice Method for cancelling listing
@@ -109,22 +109,21 @@ contract Marketplace is Ownable, ReentrancyGuard {
     /// @param _tokenId TokenID of the authorization token
     /// @param _seller The seller of the authorization token
     /// @param _amount Amount that the buyer wants
-    function buyAuthorization(
+    function buyListing(
         uint256 _tokenId,
         address _seller,
         uint256 _amount
     ) external payable nonReentrant {
-        Listing storage listedAuthorization = s_listings[_tokenId][_seller];
-        uint256 price = listedAuthorization.basePrice * _amount;
+        Listing storage listing = s_listings[_tokenId][_seller];
+        uint256 price = listing.basePrice * _amount;
 
-        if (_amount > listedAuthorization.amount)
-            revert InsufficientTokenAmount();
+        if (_amount > listing.amount) revert InsufficientTokenAmount();
         if (msg.value < price) revert PriceNotMet(_tokenId, msg.value, price);
 
         s_proceeds[_seller] += msg.value;
-        listedAuthorization.amount -= _amount;
+        listing.amount -= _amount;
 
-        if (listedAuthorization.amount == 0) {
+        if (listing.amount == 0) {
             delete s_listings[_tokenId][_seller];
 
             emit ListingCanceled(_seller, _tokenId);
@@ -145,7 +144,7 @@ contract Marketplace is Ownable, ReentrancyGuard {
             ""
         );
 
-        emit AuthorizationBought(_tokenId, msg.sender, _amount, price);
+        emit ListingBought(_tokenId, msg.sender, _amount, price);
     }
 
     /// @notice Method for withdrawing proceeds from sales

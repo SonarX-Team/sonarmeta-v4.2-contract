@@ -1,9 +1,0 @@
-{
-    "main": "0xf28f5d9207d82d145990b7e6dc41937309832ba7",
-    "governance": "0xcf52137ce3ba10c87a417956d7ff4409abd474ec",
-    "creation": "0x070dc82438e8eb5236ba7281c962836f7cad7462",
-    "authorization": "0x7072a41cc287be60f94c69378584dd848bb8e8bf",
-    "lockingVault": "0x226f4149cc0784e9bdb077a8d10d049bbd4ec3cc",
-    "marketplace": "0x5da6edb9c467419f8e87f187b512735bad074a3b",
-    "receiver": "0x0c3dce17318e7d4dca335125d4de9df237743777"
-}
