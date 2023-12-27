@@ -3,7 +3,7 @@
 ## Demo resources
 
 - Demo website address: [https://www.sonarmeta.com](https://www.sonarmeta.com).
-- Demo Next.js repo: [https://github.com/SonarX-Team/sonarmeta-v4-next](https://github.com/SonarX-Team/sonarmeta-v4-next).
+- Demo Next.js repo: [https://github.com/SonarX-Team/sonarmeta-v4-next/tree/viction](https://github.com/SonarX-Team/sonarmeta-v4-next/tree/viction).
 - Demo video: [https://youtu.be/eT6uTgPD-d8](https://youtu.be/eT6uTgPD-d8)
 
 ## Address of deployment
