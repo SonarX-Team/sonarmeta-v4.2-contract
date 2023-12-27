@@ -8,13 +8,16 @@
 
 ## Address of deployment
 
-### Polygon Mumbai
+### Viction Testnet
 
-- SonarMeta main contract: 0xd7c68ffbcdae5ddc171af7d5b707f1f521253ae8
-- Governance contract: 0x810c3e508b93949fcec4388e90dc0e8c49661792
-- Creation (network node) collection: 0xbee00961f5e0a8284a8ceaf8e3e96deca83e0d49
-- Authorization (network edge) collection: 0x3074a2e5bcd7e090ac88a20033af9f17efeec934
-- Marketplace contract: 0xbe506ab0e83a09e288283b6249c537d3de2a16a6
+- SonarMeta main contract: 0x746ff97588f3e0d8df2e09333d68368f509db35a
+- Governance contract: 0x389c15affdbb9dbc60ea50ad5d07b9b64f858932
+- Creation (network node) collection: 0x74f41df41b8a200a884a249574e27b2ee69ac5a1
+- Authorization (network edge) collection: 0x863e23f54300acc6ab271eb40f46a699d69668be
+- Locking Vault contract: 0x9087e0b89fc1b30e004bc4c371add9990da7f1ba
+- Marketplace contract: 0x61a3f47f7d7a55565a82807ead6b3ffd951d19bf
+- ERC-6551 Registry contract: 0xadeb40195e7abe1d1e5bd36d07960fc6835e3801
+- ERC-6551 Tokenbound Account contract: 0xf92d5475190cde3f44df2f9d2bdc932f48e71fd4
 
 ## Vision
 
@@ -67,6 +70,6 @@ Blockchain tokenization offers the ability to concretize and capture abstract va
 
 The immense value nurtured by the IP culture industry comes from a vast community of creators. We do not wish for these values to be monopolized by centralized platforms, subject to arbitrary exploitation, as relying on any centralized platform to be objective, fair, and efficient is an uncertain prospect. Existing platforms follow hierarchical structures, making it challenging for lower-tier creators to uphold their rights. Even if they manage to do so, the speed and cost are not optimistic. However, blockchain serves not only as a means of authentication but also as a highly concurrent, objective, transparent, and efficient method. It can automatically and rapidly address the rights and profit issues of a large number of creators without overlooking small IPs.
 
-## Next step? v4.3
+## For more infomation
 
-We are preparing the tokenomics of authorization tokens for the upcoming v4.3 release. Please hang tight to see our latest updates!
+[https://sonarx666.feishu.cn/docx/XyLndXhftoXz1GxkCYAcOIdrn1U?from=from_copylink](https://sonarx666.feishu.cn/docx/XyLndXhftoXz1GxkCYAcOIdrn1U?from=from_copylink)
