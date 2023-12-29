@@ -23,13 +23,22 @@ contract LockingVault is ERC1155Holder, Ownable, ReentrancyGuard {
 
     ///////////////////////   Events   ///////////////////////
 
-    /// @notice Emit when a locking is released
+    /// @notice Emit when a locking is set up
     event AuthorizationTokenLocked(
         uint256 indexed tokenId,
         address indexed derivative,
         uint256 amount
     );
+
+    /// @notice Emit when a locking is released
     event LockingReleased(
+        uint256 indexed tokenId,
+        address indexed derivative,
+        uint256 amount
+    );
+
+    /// @notice Emit when a locking is returned
+    event LockingReturned(
         uint256 indexed tokenId,
         address indexed derivative,
         uint256 amount
@@ -38,8 +47,9 @@ contract LockingVault is ERC1155Holder, Ownable, ReentrancyGuard {
     ///////////////////////   Errors   ///////////////////////
     error LockingAmountMustBeAboveZero();
     error LockingAlreadyExists();
-    error LockingDurationNotReached();
     error NoLockings();
+    error LockingDurationNotReached();
+    error LockingDurationHasExpired();
 
     ///////////////////   Main Functions   ///////////////////
 
@@ -75,14 +85,12 @@ contract LockingVault is ERC1155Holder, Ownable, ReentrancyGuard {
         emit AuthorizationTokenLocked(_tokenId, _derivative, _amount);
     }
 
-    /// @notice Release locked tokens after lock duration
+    /// @notice Release locked tokens after locking duration
     /// @param _tokenId The tokenID of the original node
     /// @param _derivative The node which is going to become a derivative
-    /// @param _sonarmetaImpAddr The address of the SonarMeta protocol
     function releaseLocking(
         uint256 _tokenId,
-        address _derivative,
-        address _sonarmetaImpAddr
+        address _derivative
     ) external onlyOwner nonReentrant {
         LockingInfo storage lockingInfo = s_lockings[_tokenId][_derivative];
 
@@ -102,13 +110,42 @@ contract LockingVault is ERC1155Holder, Ownable, ReentrancyGuard {
         );
         s_authorization.safeTransferFrom(
             address(this),
-            _sonarmetaImpAddr,
+            owner(),
             _tokenId,
             (amountToRelease * 1) / 20, // 5% for the SonarMeta protocol
             ""
         );
 
         emit LockingReleased(_tokenId, _derivative, amountToRelease);
+    }
+
+    /// @notice Return locked tokens before reaching deadline
+    /// @param _tokenId The tokenID of the original node
+    /// @param _original The node which will receive the tokens
+    /// @param _derivative The node which is an inclined derivative
+    function returnLocking(
+        uint256 _tokenId,
+        address _original,
+        address _derivative
+    ) external onlyOwner nonReentrant {
+        LockingInfo storage lockingInfo = s_lockings[_tokenId][_derivative];
+
+        if (lockingInfo.amount == 0) revert NoLockings();
+        if (block.timestamp >= lockingInfo.lockTimestamp + LOCK_DURATION)
+            revert LockingDurationHasExpired();
+
+        uint256 amountToReturn = lockingInfo.amount;
+        lockingInfo.amount = 0;
+
+        s_authorization.safeTransferFrom(
+            address(this),
+            _original,
+            _tokenId,
+            amountToReturn,
+            ""
+        );
+
+        emit LockingReturned(_tokenId, _derivative, amountToReturn);
     }
 
     //////////////////   Getter Functions   //////////////////

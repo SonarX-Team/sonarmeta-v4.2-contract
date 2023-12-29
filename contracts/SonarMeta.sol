@@ -47,8 +47,15 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
         uint256 amount
     );
 
-    /// @notice Emitted when authorized
-    event Authorized(
+    /// @notice Emitted when authorization confirmed
+    event AuthorizationConfirmed(
+        uint256 indexed tokenId,
+        address indexed from,
+        address indexed to
+    );
+
+    /// @notice Emitted when authorization cancelled
+    event AuthorizationCancelled(
         uint256 indexed tokenId,
         address indexed from,
         address indexed to
@@ -170,15 +177,50 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
     {
         s_vault.lockToContribute(_tokenId, _derivative, _amount);
 
+        if (!s_authorization.isApprovedForAll(msg.sender, address(this)))
+            revert NotApprovedForSonarMetaProtocol(msg.sender);
+
+        s_authorization.safeTransferFrom(
+            msg.sender,
+            address(s_vault),
+            _tokenId,
+            _amount,
+            ""
+        );
+
         emit ApplictaionAccepted(_tokenId, msg.sender, _derivative, _amount);
     }
 
-    /// @notice Authorize from an original to a derivative
-    /// msg.sender must be the original node
-    /// @param _derivative The node which will receive the authorization token
+    /// @notice After locking, the derivative node confirms the authorization
+    /// msg.sender is the derivative node itself
+    /// @param _original The node which will issue authorization
     /// @param _tokenId The tokenID of the creation token
-    /// @return The total derivative amount of the creation
-    function authorize(
+    function confirmAuthorization(
+        address _original,
+        uint256 _tokenId
+    )
+        external
+        onlySignedNode(_original)
+        onlySignedNode(msg.sender)
+        onlyOriginal(_original, _tokenId)
+        onlyNotDerivative(_original, msg.sender)
+        nonReentrant
+    {
+        s_vault.releaseLocking(_tokenId, msg.sender);
+
+        Node storage node = s_nodes[_original];
+
+        node.derivatives[msg.sender] = true;
+        node.derivativeCount++;
+
+        emit AuthorizationConfirmed(_tokenId, _original, msg.sender);
+    }
+
+    /// @notice During locking, the original can cancel the authorization for some reason
+    /// msg.sender must be the original node
+    /// @param _derivative The node which will be cancelled
+    /// @param _tokenId The tokenID of the creation token
+    function cancelAuthorization(
         address _derivative,
         uint256 _tokenId
     )
@@ -188,21 +230,10 @@ contract SonarMeta is ERC1155Holder, Ownable, ReentrancyGuard {
         onlyOriginal(msg.sender, _tokenId)
         onlyNotDerivative(msg.sender, _derivative)
         nonReentrant
-        returns (uint256)
     {
-        if (!s_authorization.isApprovedForAll(msg.sender, address(this)))
-            revert NotApprovedForSonarMetaProtocol(msg.sender);
+        s_vault.returnLocking(_tokenId, msg.sender, _derivative);
 
-        s_vault.releaseLocking(_tokenId, _derivative, address(this));
-
-        Node storage node = s_nodes[msg.sender];
-
-        node.derivatives[_derivative] = true;
-        node.derivativeCount++;
-
-        emit Authorized(_tokenId, msg.sender, _derivative);
-
-        return node.derivativeCount;
+        emit AuthorizationCancelled(_tokenId, msg.sender, _derivative);
     }
 
     /// @notice Deploy a new IP DAO contract

@@ -10,11 +10,12 @@
 
 ### Polygon Mumbai
 
-- SonarMeta main contract: 0xd7c68ffbcdae5ddc171af7d5b707f1f521253ae8
-- Governance contract: 0x810c3e508b93949fcec4388e90dc0e8c49661792
-- Creation (network node) collection: 0xbee00961f5e0a8284a8ceaf8e3e96deca83e0d49
-- Authorization (network edge) collection: 0x3074a2e5bcd7e090ac88a20033af9f17efeec934
-- Marketplace contract: 0xbe506ab0e83a09e288283b6249c537d3de2a16a6
+- SonarMeta main contract: 0x9fc7a62846cd8c4b6159f7c7da50a8af35cbdfde
+- Governance contract: 0x6a640c25b6a33dab95c1e75638b855ca23532537
+- Creation (network node) collection: 0x241054802d75820de80842915dd47da274df45b9
+- Authorization (network edge) collection: 0x0848cce0741782029c399b347c5bf9152d34b5c4
+- Locking Vault contract: 0xd57f5ff918a8985b8b4eddfadd1505dce3be04b8
+- Marketplace contract: 0x64638227f2638300ca884df2e8dacda4bb2a9db5
 
 ## Vision
 
