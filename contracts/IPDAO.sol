@@ -3,7 +3,9 @@ pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+
 import "./Creation.sol";
+
 import "./utils/ReentrancyGuard.sol";
 
 /// @title SonarMeta IP DAO contract
@@ -23,13 +25,13 @@ contract IpDao is ERC721Holder, Ownable, ReentrancyGuard {
 
     ///////////////////////   Events   ///////////////////////
 
-    /// @notice Emitted when a member has been added
+    /// @notice Emit when a member has been added
     event MemberAdded(address indexed memberAddr);
 
-    /// @notice Emitted when a member has been removed
+    /// @notice Emit when a member has been removed
     event MemberRemoved(address indexed memberAddr);
 
-    /// @notice Emitted when a creation token is submitted
+    /// @notice Emit when a creation token is submitted
     event CreationSubmitted(
         uint256 indexed tokenId,
         address indexed submitter,

@@ -4,6 +4,8 @@ pragma solidity ^0.8.19;
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
+
+import "./SonarMeta.sol";
 import "./Creation.sol";
 
 /// @title SonarMeta authorization contract
@@ -57,8 +59,7 @@ contract Authorization is ERC1155, Ownable, ERC1155Supply {
             "The given tokenID has been already claimed."
         );
 
-        _mint(_issuer, _tokenId, (_maxSupply * 19) / 20, ""); // 95%(9,500,000) for node itself
-        _mint(owner(), _tokenId, (_maxSupply * 1) / 20, ""); // 5%(50,000) for the SonarMeta protocol
+        _mint(_issuer, _tokenId, _maxSupply, "");
     }
 
     /// @notice Get all token IDs held by a specific address

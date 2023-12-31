@@ -1,29 +1,34 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "./SonarMeta.sol";
+import "./Business.sol";
 import "./Authorization.sol";
+
 import "./utils/ReentrancyGuard.sol";
 
 /// @title SonarMeta marketplace contract for `authorization tokens`
 /// @author SonarX (Hangzhou) Technology Co., Ltd.
-contract Marketplace is Ownable, ReentrancyGuard {
+contract Marketplace is ReentrancyGuard {
     struct Listing {
         uint256 amount;
         uint256 basePrice; // In Wei
     }
+
+    uint256 private s_fee;
 
     // Track all listings, tokenID => (seller => Listing)
     mapping(uint256 => mapping(address => Listing)) private s_listings;
     // Pull over push pattern, seller => proceeds
     mapping(address => uint256) private s_proceeds;
 
+    SonarMeta private s_sonarmeta;
+    Business private s_business;
     Authorization private s_authorization;
 
     ///////////////////////   Events   ///////////////////////
 
-    /// @notice Emitted when authorization tokens are listed or updated
+    /// @notice Emit when authorization tokens are listed or updated
     event Listed(
         uint256 indexed tokenId,
         address indexed seller,
@@ -31,10 +36,10 @@ contract Marketplace is Ownable, ReentrancyGuard {
         uint256 basePrice
     );
 
-    /// @notice Emitted when a listing is canceled
+    /// @notice Emit when a listing is canceled
     event ListingCanceled(address indexed seller, uint256 indexed tokenId);
 
-    /// @notice Emitted when authorization tokens are bought
+    /// @notice Emit when authorization tokens are bought
     event ListingBought(
         uint256 indexed tokenId,
         address indexed buyer,
@@ -44,7 +49,7 @@ contract Marketplace is Ownable, ReentrancyGuard {
 
     ///////////////////////   Errors   ///////////////////////
 
-    error SellerIsNeitherOriginalNorDerivative(
+    error SellerNeitherOriginalNorDerivative(
         uint256 tokenId,
         address derivative
     );
@@ -52,13 +57,28 @@ contract Marketplace is Ownable, ReentrancyGuard {
     error InsufficientTokenAmount();
     error NotApprovedForMarketplace();
     error PriceMustBeAboveZero();
-    error NoProceeds();
+    error NoProceeds(address seller);
+    error OnlySonarMetaOwnerAllowed();
+
+    /////////////////////   Modifiers   //////////////////////
+
+    modifier onlySonarMetaOwner(address _sonarmetaOwner) {
+        if (s_sonarmeta.owner() != _sonarmetaOwner)
+            revert OnlySonarMetaOwnerAllowed();
+        _;
+    }
 
     ///////////////////   Main Functions   ///////////////////
 
-    constructor(address _authorizationImpAddr) Ownable(msg.sender) {
+    constructor(
+        address _sonarmetaImpAddr,
+        address _businessImpAddr,
+        address _authorizationImpAddr
+    ) {
         initializeReentrancyGuard();
 
+        s_sonarmeta = SonarMeta(_sonarmetaImpAddr);
+        s_business = Business(_businessImpAddr);
         s_authorization = Authorization(_authorizationImpAddr);
     }
 
@@ -67,23 +87,20 @@ contract Marketplace is Ownable, ReentrancyGuard {
     /// @param _tokenId TokenID of the authorization token
     /// @param _amount Amount of the authorization token
     /// @param _basePrice Base price for each authorization token
-    /// @param _sonarmetaImpAddr Address of the SonarMeta main contract
     function listForSale(
         uint256 _tokenId,
         uint256 _amount,
-        uint256 _basePrice,
-        address _sonarmetaImpAddr
+        uint256 _basePrice
     ) external {
         if (!s_authorization.isApprovedForAll(msg.sender, address(this)))
             revert NotApprovedForMarketplace();
 
         if (_basePrice <= 0) revert PriceMustBeAboveZero();
 
-        SonarMeta sonarmeta = SonarMeta(_sonarmetaImpAddr);
         if (
-            !sonarmeta.isOriginal(msg.sender, _tokenId) &&
-            !sonarmeta.isDerivativeByTokenId(_tokenId, msg.sender)
-        ) revert SellerIsNeitherOriginalNorDerivative(_tokenId, msg.sender);
+            !s_sonarmeta.isOriginal(msg.sender, _tokenId) &&
+            !s_sonarmeta.isDerivativeByTokenId(_tokenId, msg.sender)
+        ) revert SellerNeitherOriginalNorDerivative(_tokenId, msg.sender);
 
         uint256 value = s_authorization.balanceOf(msg.sender, _tokenId);
         if (value < _amount) revert InsufficientTokenAmount();
@@ -101,28 +118,37 @@ contract Marketplace is Ownable, ReentrancyGuard {
         emit ListingCanceled(msg.sender, _tokenId);
     }
 
-    /// @notice Method for buying listing for a node
-    /// @notice Anyone can buy but the seller needs to be the original or a derivative
-    /// @notice The owner could unapprove the marketplace,
-    /// which would cause this function to fail
-    /// Ideally you'd also have a `createOffer` functionality.
+    /// @notice Method for buying listing by a node
+    /// @notice Anyone can buy BUT the seller needs to be the original or a derivative
+    /// @notice The owner could unapprove the marketplace, which would cause this function to fail
+    /// Ideally we'd also have a `createOffer` functionality.
     /// @param _tokenId TokenID of the authorization token
     /// @param _seller The seller of the authorization token
     /// @param _amount Amount that the buyer wants
+    /// @param _businessAddrs The addresses of the related businesses
     function buyListing(
         uint256 _tokenId,
         address _seller,
-        uint256 _amount
+        uint256 _amount,
+        address[] memory _businessAddrs
     ) external payable nonReentrant {
         Listing storage listing = s_listings[_tokenId][_seller];
-        uint256 price = listing.basePrice * _amount;
+
+        (
+            uint256 price,
+            uint256 sonarmetaFee,
+            uint256[] memory businessFees
+        ) = calculateListingCost(_tokenId, _seller, _amount, _businessAddrs);
 
         if (_amount > listing.amount) revert InsufficientTokenAmount();
-        if (msg.value < price) revert PriceNotMet(_tokenId, msg.value, price);
+        if (msg.value < price + s_fee)
+            revert PriceNotMet(_tokenId, msg.value, price + s_fee);
 
-        s_proceeds[_seller] += msg.value;
+        s_proceeds[_seller] += price;
+        s_fee += sonarmetaFee;
+        s_business.increaseProceeds(_businessAddrs, businessFees);
+
         listing.amount -= _amount;
-
         if (listing.amount == 0) {
             delete s_listings[_tokenId][_seller];
 
@@ -133,31 +159,35 @@ contract Marketplace is Ownable, ReentrancyGuard {
             _seller,
             msg.sender,
             _tokenId,
-            (_amount * 19) / 20, // 95% for the buyer
-            ""
-        );
-        s_authorization.safeTransferFrom(
-            _seller,
-            address(this),
-            _tokenId,
-            (_amount * 1) / 20, // 5% for the SonarMeta protocol
+            _amount,
             ""
         );
 
         emit ListingBought(_tokenId, msg.sender, _amount, price);
     }
 
-    /// @notice Method for withdrawing proceeds from sales
-    function withdrawProceeds() external nonReentrant {
-        uint256 proceed = s_proceeds[msg.sender];
+    /// @notice Method for withdrawing proceeds from sales by sellers
+    function withdrawBySellers() external nonReentrant {
+        uint256 proceeds = s_proceeds[msg.sender];
 
-        if (proceed <= 0) revert NoProceeds();
+        if (proceeds <= 0) revert NoProceeds(msg.sender);
 
         s_proceeds[msg.sender] = 0;
 
-        (bool success, ) = payable(msg.sender).call{value: proceed}("");
+        (bool success, ) = payable(msg.sender).call{value: proceeds}("");
+        require(success, "Native token transfer failed");
+    }
 
-        require(success, "Transfer failed");
+    /// @notice Method for withdrawing proceeds by SonarMeta
+    function withdrawBySonarMeta()
+        external
+        onlySonarMetaOwner(msg.sender)
+        nonReentrant
+    {
+        require(s_fee > 0, "No native token to withdraw");
+
+        (bool success, ) = payable(s_sonarmeta.owner()).call{value: s_fee}("");
+        require(success, "Native token transfer failed");
     }
 
     //////////////////   Getter Functions   //////////////////
@@ -170,8 +200,41 @@ contract Marketplace is Ownable, ReentrancyGuard {
         return s_listings[_tokenId][_seller];
     }
 
+    /// @notice Calculate cost of buying a listing
+    /// @param _tokenId TokenID of the authorization token
+    /// @param _seller The seller of the authorization token
+    /// @param _amount Amount that the buyer wants
+    /// @param _businessAddrs The addresses of the related businesses
+    function calculateListingCost(
+        uint256 _tokenId,
+        address _seller,
+        uint256 _amount,
+        address[] memory _businessAddrs
+    ) public view returns (uint256, uint256, uint256[] memory) {
+        Listing memory listing = s_listings[_tokenId][_seller];
+        uint256[] memory businessFees = new uint256[](_businessAddrs.length);
+
+        uint256 price = listing.basePrice * _amount;
+        uint256 sonarmetaFee = price * s_sonarmeta.getSonarMetaRoi();
+
+        for (uint256 i = 0; i < _businessAddrs.length; i++) {
+            uint256 rateOfReturn = s_business.getBusinessRoi(_businessAddrs[i]);
+
+            businessFees[i] += price * rateOfReturn;
+        }
+
+        return (price, sonarmetaFee, businessFees);
+    }
+
     /// @notice Get proceeds of a seller
-    function getProceeds(address _seller) external view returns (uint256) {
+    function getSellerProceeds(
+        address _seller
+    ) external view returns (uint256) {
         return s_proceeds[_seller];
+    }
+
+    /// @notice Get proceeds of SonarMeta
+    function getSonarMetaProceeds() external view returns (uint256) {
+        return s_fee;
     }
 }

@@ -3,7 +3,10 @@ pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+
+import "./SonarMeta.sol";
 import "./Authorization.sol";
+
 import "./utils/ReentrancyGuard.sol";
 
 /// @title SonarMeta locking vault contract for authorization tokens
@@ -88,9 +91,11 @@ contract LockingVault is ERC1155Holder, Ownable, ReentrancyGuard {
     /// @notice Release locked tokens after locking duration
     /// @param _tokenId The tokenID of the original node
     /// @param _derivative The node which is going to become a derivative
+    /// @param _sonarmetaImpAddr Address of the SonarMeta main contract
     function releaseLocking(
         uint256 _tokenId,
-        address _derivative
+        address _derivative,
+        address _sonarmetaImpAddr
     ) external onlyOwner nonReentrant {
         LockingInfo storage lockingInfo = s_lockings[_tokenId][_derivative];
 
@@ -101,18 +106,20 @@ contract LockingVault is ERC1155Holder, Ownable, ReentrancyGuard {
         uint256 amountToRelease = lockingInfo.amount;
         lockingInfo.amount = 0;
 
+        SonarMeta sonarmeta = SonarMeta(_sonarmetaImpAddr);
+
         s_authorization.safeTransferFrom(
             address(this),
             _derivative,
             _tokenId,
-            (amountToRelease * 19) / 20, // 95% for the derivative
+            (amountToRelease * (100 - sonarmeta.getSonarMetaRoi())) / 100,
             ""
         );
         s_authorization.safeTransferFrom(
             address(this),
             owner(),
             _tokenId,
-            (amountToRelease * 1) / 20, // 5% for the SonarMeta protocol
+            (amountToRelease * sonarmeta.getSonarMetaRoi()) / 100,
             ""
         );
 
