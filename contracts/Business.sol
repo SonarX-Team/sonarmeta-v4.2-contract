@@ -12,13 +12,10 @@ contract Business is ReentrancyGuard {
         mapping(address => bool) nodes; // All nodes that use this business
         uint256 nodeCount; // The amount of nodes/users of this business
         uint256 rateOfReturn; // The ROI of this business in percent
-        uint256 proceeds; // The proceeds that this business can withdraw
     }
 
     // Track all business, business owner => business info
     mapping(address => BusinessInfo) s_businesses;
-
-    address private s_marketplaceImpAddr;
 
     ///////////////////////   Events   ///////////////////////
 
@@ -38,8 +35,6 @@ contract Business is ReentrancyGuard {
 
     error BusinessNotSigned(address businessAddr);
     error RoiMustBePercentage(uint256 rateOfReturn);
-    error SenderIsNotMarketplace(address marketplaceImpAddr);
-    error NoProceeds(address businessAddr);
 
     /////////////////////   Modifiers   //////////////////////
 
@@ -49,17 +44,7 @@ contract Business is ReentrancyGuard {
         _;
     }
 
-    modifier onlyMarketplace(address _sender) {
-        if (s_marketplaceImpAddr != _sender)
-            revert SenderIsNotMarketplace(_sender);
-        _;
-    }
-
     ///////////////////   Main Functions   ///////////////////
-
-    constructor(address _marketplaceImpAddr) {
-        s_marketplaceImpAddr = _marketplaceImpAddr;
-    }
 
     /// @notice A business signs to use the Business protocol
     /// msg.sender is the business owner address that wants to sign
@@ -103,37 +88,6 @@ contract Business is ReentrancyGuard {
         info.nodeCount++;
 
         emit NodeAdded(_businessAddr, msg.sender);
-    }
-
-    /// @notice Increase businesses' proceeds after a transaction in Marketplace
-    /// msg.sender must be the Marketplace contract
-    /// The "for-loop" is not an ideal implementation,
-    /// but let's assume a node won't engage in too much business for now
-    /// @param _businessAddrs The addresses of the related businesses
-    /// @param _businessFees The fees of the related businesses
-    function increaseProceeds(
-        address[] memory _businessAddrs,
-        uint256[] memory _businessFees
-    ) external onlyMarketplace(msg.sender) nonReentrant {
-        for (uint256 i = 0; i < _businessAddrs.length; i++)
-            s_businesses[_businessAddrs[i]].proceeds += _businessFees[i];
-    }
-
-    /// @notice Method for withdrawing authorization tokens to a business
-    /// msg.sender must be a business
-    function withdrawProceeds()
-        external
-        onlySignedBusiness(msg.sender)
-        nonReentrant
-    {
-        uint256 proceeds = s_businesses[msg.sender].proceeds;
-
-        if (proceeds <= 0) revert NoProceeds(msg.sender);
-
-        s_businesses[msg.sender].proceeds = 0;
-
-        (bool success, ) = payable(msg.sender).call{value: proceeds}("");
-        require(success, "Transfer failed");
     }
 
     //////////////////   Getter Functions   //////////////////

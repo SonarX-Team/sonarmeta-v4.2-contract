@@ -47,21 +47,13 @@ async function main() {
   const lockingVault = await hre.viem.deployContract("LockingVault", [owner.account.address, authorization.address]);
   console.log(`LockingVault contract deployed at: ${lockingVault.address}, with nonce: ${count}`);
 
-  console.log("Deploying Marketplace contract...");
-  // @ts-ignore
-  count = await publicClient.getTransactionCount({
-    address: owner.account.address,
-  });
-  const marketplace = await hre.viem.deployContract("Marketplace", [authorization.address]);
-  console.log(`Authorization contract deployed at: ${marketplace.address}, with nonce: ${count}`);
-
   console.log("Deploying Governance contract...");
   // @ts-ignore
   count = await publicClient.getTransactionCount({
     address: owner.account.address,
   });
   const governance = await hre.viem.deployContract("Governance");
-  console.log(`Authorization contract deployed at: ${governance.address}, with nonce: ${count}`);
+  console.log(`Governance contract deployed at: ${governance.address}, with nonce: ${count}`);
 
   console.log("Deploying SonarMeta main contract...");
   // @ts-ignore
@@ -74,6 +66,26 @@ async function main() {
     lockingVault.address,
   ]);
   console.log(`Main contract deployed at: ${main.address}, with nonce: ${count}`);
+
+  console.log("Deploying Business contract...");
+  // @ts-ignore
+  count = await publicClient.getTransactionCount({
+    address: owner.account.address,
+  });
+  const business = await hre.viem.deployContract("Business");
+  console.log(`Business contract deployed at: ${business.address}, with nonce: ${count}`);
+
+  console.log("Deploying Marketplace contract...");
+  // @ts-ignore
+  count = await publicClient.getTransactionCount({
+    address: owner.account.address,
+  });
+  const marketplace = await hre.viem.deployContract("Marketplace", [
+    main.address,
+    business.address,
+    authorization.address,
+  ]);
+  console.log(`Marketplace contract deployed at: ${marketplace.address}, with nonce: ${count}`);
 
   // Transfer Ownership
   await creation.write.transferOwnership([main.address]);
@@ -90,6 +102,7 @@ async function main() {
     authorization: authorization.address,
     lockingVault: lockingVault.address,
     marketplace: marketplace.address,
+    business: business.address,
   };
 
   console.log(addresses);

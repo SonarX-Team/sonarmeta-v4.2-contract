@@ -15,11 +15,11 @@ contract Marketplace is ReentrancyGuard {
         uint256 basePrice; // In Wei
     }
 
-    uint256 private s_fee;
+    uint256 private s_sonarmetaFee;
 
     // Track all listings, tokenID => (seller => Listing)
     mapping(uint256 => mapping(address => Listing)) private s_listings;
-    // Pull over push pattern, seller => proceeds
+    // Pull over push pattern, seller/business => proceeds
     mapping(address => uint256) private s_proceeds;
 
     SonarMeta private s_sonarmeta;
@@ -134,19 +134,24 @@ contract Marketplace is ReentrancyGuard {
     ) external payable nonReentrant {
         Listing storage listing = s_listings[_tokenId][_seller];
 
-        (
-            uint256 price,
-            uint256 sonarmetaFee,
-            uint256[] memory businessFees
-        ) = calculateListingCost(_tokenId, _seller, _amount, _businessAddrs);
+        uint256 price = listing.basePrice * _amount;
+        uint256 sonarmetaFee = price * s_sonarmeta.getSonarMetaRoi();
+        uint256 totalFee = sonarmetaFee;
 
         if (_amount > listing.amount) revert InsufficientTokenAmount();
-        if (msg.value < price + s_fee)
-            revert PriceNotMet(_tokenId, msg.value, price + s_fee);
+        if (msg.value < price) revert PriceNotMet(_tokenId, msg.value, price);
 
-        s_proceeds[_seller] += price;
-        s_fee += sonarmetaFee;
-        s_business.increaseProceeds(_businessAddrs, businessFees);
+        uint256 businessTotalRate;
+        for (uint256 i = 0; i < _businessAddrs.length; i++) {
+            uint256 rateOfReturn = s_business.getBusinessRoi(_businessAddrs[i]);
+            businessTotalRate += rateOfReturn;
+
+            s_proceeds[_businessAddrs[i]] += price * rateOfReturn;
+        }
+        totalFee = sonarmetaFee + (price * businessTotalRate);
+
+        s_proceeds[_seller] += price - totalFee;
+        s_sonarmetaFee += sonarmetaFee;
 
         listing.amount -= _amount;
         if (listing.amount == 0) {
@@ -184,9 +189,11 @@ contract Marketplace is ReentrancyGuard {
         onlySonarMetaOwner(msg.sender)
         nonReentrant
     {
-        require(s_fee > 0, "No native token to withdraw");
+        require(s_sonarmetaFee > 0, "No native token to withdraw");
 
-        (bool success, ) = payable(s_sonarmeta.owner()).call{value: s_fee}("");
+        (bool success, ) = payable(s_sonarmeta.owner()).call{
+            value: s_sonarmetaFee
+        }("");
         require(success, "Native token transfer failed");
     }
 
@@ -200,32 +207,6 @@ contract Marketplace is ReentrancyGuard {
         return s_listings[_tokenId][_seller];
     }
 
-    /// @notice Calculate cost of buying a listing
-    /// @param _tokenId TokenID of the authorization token
-    /// @param _seller The seller of the authorization token
-    /// @param _amount Amount that the buyer wants
-    /// @param _businessAddrs The addresses of the related businesses
-    function calculateListingCost(
-        uint256 _tokenId,
-        address _seller,
-        uint256 _amount,
-        address[] memory _businessAddrs
-    ) public view returns (uint256, uint256, uint256[] memory) {
-        Listing memory listing = s_listings[_tokenId][_seller];
-        uint256[] memory businessFees = new uint256[](_businessAddrs.length);
-
-        uint256 price = listing.basePrice * _amount;
-        uint256 sonarmetaFee = price * s_sonarmeta.getSonarMetaRoi();
-
-        for (uint256 i = 0; i < _businessAddrs.length; i++) {
-            uint256 rateOfReturn = s_business.getBusinessRoi(_businessAddrs[i]);
-
-            businessFees[i] += price * rateOfReturn;
-        }
-
-        return (price, sonarmetaFee, businessFees);
-    }
-
     /// @notice Get proceeds of a seller
     function getSellerProceeds(
         address _seller
@@ -235,6 +216,6 @@ contract Marketplace is ReentrancyGuard {
 
     /// @notice Get proceeds of SonarMeta
     function getSonarMetaProceeds() external view returns (uint256) {
-        return s_fee;
+        return s_sonarmetaFee;
     }
 }

@@ -8,14 +8,15 @@
 
 ## Address of deployment
 
-### Polygon Mumbai
+### Linea Goerli
 
-- SonarMeta main contract: 0x9fc7a62846cd8c4b6159f7c7da50a8af35cbdfde
-- Governance contract: 0x6a640c25b6a33dab95c1e75638b855ca23532537
-- Creation (network node) collection: 0x241054802d75820de80842915dd47da274df45b9
-- Authorization (network edge) collection: 0x0848cce0741782029c399b347c5bf9152d34b5c4
-- Locking Vault contract: 0xd57f5ff918a8985b8b4eddfadd1505dce3be04b8
-- Marketplace contract: 0x64638227f2638300ca884df2e8dacda4bb2a9db5
+- SonarMeta main contract: 0x21d17779f807086616a7944b86de33830c03d83a
+- Governance contract: 0x59b6338b9410b799a838ac1bff64ee6b164fdb10
+- Creation (network node) collection: 0x967bf3664fc439eb84d20fa1c7c11a5666f41db8
+- Authorization (network edge) collection: 0x1abbfec8c8f26be8527263eb623e6d88bf389779
+- Locking Vault contract: 0xaa9019679bfde72478e99a82c3d2b2f892b5ca12
+- Marketplace contract: 0x9c27dc97e668ea93fe2de4314bdb2a3c038cf434
+- Business contract: 0x4a3ebb31742372e4150024a71f155d4e900bc19c
 
 ## Vision
 
