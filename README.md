@@ -10,12 +10,13 @@
 
 ### Viction Testnet
 
-- SonarMeta main contract: 0x746ff97588f3e0d8df2e09333d68368f509db35a
-- Governance contract: 0x389c15affdbb9dbc60ea50ad5d07b9b64f858932
-- Creation (network node) collection: 0x74f41df41b8a200a884a249574e27b2ee69ac5a1
-- Authorization (network edge) collection: 0x863e23f54300acc6ab271eb40f46a699d69668be
-- Locking Vault contract: 0x9087e0b89fc1b30e004bc4c371add9990da7f1ba
-- Marketplace contract: 0x61a3f47f7d7a55565a82807ead6b3ffd951d19bf
+- SonarMeta main contract: 0x32266377fe3663ba4ba89563e7869314479eb922
+- Governance contract: 0x39b8475298a7bb74f7a70777c546ebb3125496dd
+- Creation (network node) collection: 0x6a640c25b6a33dab95c1e75638b855ca23532537
+- Authorization (network edge) collection: 0x9fc7a62846cd8c4b6159f7c7da50a8af35cbdfde
+- Locking Vault contract: 0xd6e63a79943c6359070510ed43739aa9d1c58587
+- Marketplace contract: 0x43eec24227ca2f79a942426764cef566c8e99bf0
+- Business contract: 0x49be8ed78ecaf6b43581f2a61f704198452c3079
 - ERC-6551 Registry contract: 0xadeb40195e7abe1d1e5bd36d07960fc6835e3801
 - ERC-6551 Tokenbound Account contract: 0xf92d5475190cde3f44df2f9d2bdc932f48e71fd4
 
