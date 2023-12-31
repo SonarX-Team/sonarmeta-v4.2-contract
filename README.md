@@ -10,13 +10,13 @@
 
 ### Linea Goerli
 
-- SonarMeta main contract: 0x21d17779f807086616a7944b86de33830c03d83a
-- Governance contract: 0x59b6338b9410b799a838ac1bff64ee6b164fdb10
-- Creation (network node) collection: 0x967bf3664fc439eb84d20fa1c7c11a5666f41db8
-- Authorization (network edge) collection: 0x1abbfec8c8f26be8527263eb623e6d88bf389779
-- Locking Vault contract: 0xaa9019679bfde72478e99a82c3d2b2f892b5ca12
-- Marketplace contract: 0x9c27dc97e668ea93fe2de4314bdb2a3c038cf434
-- Business contract: 0x4a3ebb31742372e4150024a71f155d4e900bc19c
+- SonarMeta main contract: 0x29ff1b3a722a6ad3f085fb27ffe4123021ae1a03
+- Governance contract: 0xd8b23bb39a3486c356b0cceadf5e6c400304dc42
+- Creation (network node) collection: 0x228cd93e972d49d4b460207bc98e0b5e75c3c290
+- Authorization (network edge) collection: 0xc314a8fd71f705a391893e757f463b60f6c4e9b5
+- Locking Vault contract: 0x14b4d0c5265d955b665e43a0f63857268a9ef20c
+- Marketplace contract: 0x00f4332e45f6652ea09939605766ad7bf8f32b0d
+- Business contract: 0x52af07ee20a5ef20bc503b2c93b8f853861f167d
 
 ## Vision
 
@@ -69,6 +69,6 @@ Blockchain tokenization offers the ability to concretize and capture abstract va
 
 The immense value nurtured by the IP culture industry comes from a vast community of creators. We do not wish for these values to be monopolized by centralized platforms, subject to arbitrary exploitation, as relying on any centralized platform to be objective, fair, and efficient is an uncertain prospect. Existing platforms follow hierarchical structures, making it challenging for lower-tier creators to uphold their rights. Even if they manage to do so, the speed and cost are not optimistic. However, blockchain serves not only as a means of authentication but also as a highly concurrent, objective, transparent, and efficient method. It can automatically and rapidly address the rights and profit issues of a large number of creators without overlooking small IPs.
 
-## Next step? v4.3
+## For more infomation
 
-We are preparing the tokenomics of authorization tokens for the upcoming v4.3 release. Please hang tight to see our latest updates!
+[https://sonarx666.feishu.cn/docx/XyLndXhftoXz1GxkCYAcOIdrn1U?from=from_copylink](https://sonarx666.feishu.cn/docx/XyLndXhftoXz1GxkCYAcOIdrn1U?from=from_copylink)

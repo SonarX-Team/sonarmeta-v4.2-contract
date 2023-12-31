@@ -171,8 +171,8 @@ contract Marketplace is ReentrancyGuard {
         emit ListingBought(_tokenId, msg.sender, _amount, price);
     }
 
-    /// @notice Method for withdrawing proceeds from sales by sellers
-    function withdrawBySellers() external nonReentrant {
+    /// @notice Method for withdrawing proceeds by sellers/businesses
+    function withdrawProceeds() external nonReentrant {
         uint256 proceeds = s_proceeds[msg.sender];
 
         if (proceeds <= 0) revert NoProceeds(msg.sender);
