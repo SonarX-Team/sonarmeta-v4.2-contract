@@ -171,8 +171,8 @@ contract Marketplace is ReentrancyGuard {
         emit ListingBought(_tokenId, msg.sender, _amount, price);
     }
 
-    /// @notice Method for withdrawing proceeds from sales by sellers
-    function withdrawBySellers() external nonReentrant {
+    /// @notice Method for withdrawing proceeds by a seller/business
+    function withdrawProceeds() external nonReentrant {
         uint256 proceeds = s_proceeds[msg.sender];
 
         if (proceeds <= 0) revert NoProceeds(msg.sender);
@@ -207,11 +207,9 @@ contract Marketplace is ReentrancyGuard {
         return s_listings[_tokenId][_seller];
     }
 
-    /// @notice Get proceeds of a seller
-    function getSellerProceeds(
-        address _seller
-    ) external view returns (uint256) {
-        return s_proceeds[_seller];
+    /// @notice Get proceeds of a seller/business
+    function getSellerProceeds(address _node) external view returns (uint256) {
+        return s_proceeds[_node];
     }
 
     /// @notice Get proceeds of SonarMeta

@@ -1,9 +1,9 @@
 {
-    "main": "0x32266377fe3663ba4ba89563e7869314479eb922",
-    "governance": "0x39b8475298a7bb74f7a70777c546ebb3125496dd",
-    "creation": "0x6a640c25b6a33dab95c1e75638b855ca23532537",
-    "authorization": "0x9fc7a62846cd8c4b6159f7c7da50a8af35cbdfde",
-    "lockingVault": "0xd6e63a79943c6359070510ed43739aa9d1c58587",
-    "marketplace": "0x43eec24227ca2f79a942426764cef566c8e99bf0",
-    "business": "0x49be8ed78ecaf6b43581f2a61f704198452c3079"
+    "main": "0xb4e25ef589a181390635cf00528d3d98fae14216",
+    "governance": "0x97818207b5ea2c41a0532c98592507751e9f106a",
+    "creation": "0xdeacf67c609dce96cc84460ce75c933bfe28fd4c",
+    "authorization": "0x888e6435cef61c67a56e75447fa7bf6b021b86ec",
+    "lockingVault": "0x3dadf65562a69f20829c2b8e5da35c9e88860140",
+    "marketplace": "0x97ffa1634170c1eb705b384baf1aa2f690b236fc",
+    "business": "0x5eda45a740158d985854ebb408a41dae4e96de3b"
 }
