@@ -207,11 +207,9 @@ contract Marketplace is ReentrancyGuard {
         return s_listings[_tokenId][_seller];
     }
 
-    /// @notice Get proceeds of a seller
-    function getSellerProceeds(
-        address _seller
-    ) external view returns (uint256) {
-        return s_proceeds[_seller];
+    /// @notice Get proceeds of a seller/business
+    function getProceeds(address _node) external view returns (uint256) {
+        return s_proceeds[_node];
     }
 
     /// @notice Get proceeds of SonarMeta

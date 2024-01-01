@@ -10,13 +10,13 @@
 
 ### Linea Goerli
 
-- SonarMeta main contract: 0x29ff1b3a722a6ad3f085fb27ffe4123021ae1a03
-- Governance contract: 0xd8b23bb39a3486c356b0cceadf5e6c400304dc42
-- Creation (network node) collection: 0x228cd93e972d49d4b460207bc98e0b5e75c3c290
-- Authorization (network edge) collection: 0xc314a8fd71f705a391893e757f463b60f6c4e9b5
-- Locking Vault contract: 0x14b4d0c5265d955b665e43a0f63857268a9ef20c
-- Marketplace contract: 0x00f4332e45f6652ea09939605766ad7bf8f32b0d
-- Business contract: 0x52af07ee20a5ef20bc503b2c93b8f853861f167d
+- SonarMeta main contract: 0x86cc93b1a73fc8a62767d6efdfbbbfb1e4d7cd0c
+- Governance contract: 0x498d5f1f68eee1bb6b95e61bcf26ac681f7263c8
+- Creation (network node) collection: 0x7e85e9292bcaf178f027e4ba0f3ed7eb44b7b914
+- Authorization (network edge) collection: 0x550ac3b5d4cf6f8aa7b6357a960987e24406a069
+- Locking Vault contract: 0xefa0ff49b05fa45c4b5863ebaaaf403415f51304
+- Marketplace contract: 0x9dd1887ea109d3f9c8cd542449af71817135e98d
+- Business contract: 0x9092fdc4bf0aeda715659f8031c5cf566010d81b
 
 ## Vision
 
